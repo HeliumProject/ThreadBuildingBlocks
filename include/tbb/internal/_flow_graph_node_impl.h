@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -130,6 +130,7 @@ namespace internal {
                 my_queue->reset();
             }
             my_predecessors.reset();
+            forwarder_busy = false;
         }
 
         task *my_root_task;
@@ -209,7 +210,7 @@ namespace internal {
                             bool item_was_retrieved = false;
                             if ( my_queue )
                                 item_was_retrieved = my_queue->pop(i);
-                            else
+                            else 
                                 item_was_retrieved = my_predecessors.get_item(i);
                             if (item_was_retrieved) {
                                 ++my_concurrency;
@@ -270,14 +271,12 @@ namespace internal {
             task *new_task = apply_body_bypass(i);
             if(!new_task) return;
             if(new_task == SUCCESSFULLY_ENQUEUED) return;
-            task::enqueue(*new_task);
+            FLOW_SPAWN(*new_task);
             return;
         }
         
         //! Applies the body to the provided input
         //  then decides if more work is available 
-        //  we should still be able to use app_body, because the task returned should be the successor node
-        //  and not us, so we are reducing my_concurrency.  (might be a problem if we are our own successor?)
         task * apply_body_bypass( input_type &i ) {
             task * new_task = static_cast<ImplType *>(this)->apply_body_impl_bypass(i);
             if ( my_max_concurrency != 0 ) {
@@ -297,7 +296,7 @@ namespace internal {
 
        //! Spawns a task that calls apply_body( input )
        inline void spawn_body_task( const input_type &input ) {
-           task::enqueue(*create_body_task(input));
+           FLOW_SPAWN(*create_body_task(input));
        }
         
        //! This is executed by an enqueued task, the "forwarder"
@@ -322,7 +321,7 @@ namespace internal {
 
        //! Spawns a task that calls forward()
        inline void spawn_forward_task() {
-           task::enqueue(*create_forward_task());
+           FLOW_SPAWN(*create_forward_task());
        }
     };  // function_input_base
 
@@ -485,6 +484,10 @@ namespace internal {
         continue_input( const continue_input& src ) : continue_receiver(src), 
             my_root_task(src.my_root_task), my_body( src.my_body->clone() ) {}
 
+        ~continue_input() {
+            delete my_body;
+        }
+
         template< typename Body >
         Body copy_function_object() {
             internal::function_body<input_type, output_type> &body_ref = *my_body;
@@ -566,7 +569,7 @@ namespace internal {
         bool try_put(const output_type &i) {
             task *res = my_successors.try_put_task(i);
             if(!res) return false;
-            if(res != SUCCESSFULLY_ENQUEUED) task::enqueue(*res);
+            if(res != SUCCESSFULLY_ENQUEUED) FLOW_SPAWN(*res);
             return true;
         }
     };

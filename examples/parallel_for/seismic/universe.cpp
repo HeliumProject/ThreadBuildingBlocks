@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -25,10 +25,6 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 */
-
-#if __TBB_MIC
-#pragma offload_attribute (target(mic))
-#endif // __TBB_MIC
 
 #include "../../common/gui/video.h"
 #include <cmath>

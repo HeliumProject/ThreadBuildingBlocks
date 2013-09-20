@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -27,6 +27,7 @@
 */
 
 #include "proxy.h"
+#include "tbb/tbb_config.h"
 
 #if !defined(__EXCEPTIONS) && !defined(_CPPUNWIND) && !defined(__SUNPRO_CC) || defined(_XBOX)
     #if TBB_USE_EXCEPTIONS
@@ -38,7 +39,7 @@
     #define TBB_USE_EXCEPTIONS 1
 #endif
 
-#if MALLOC_LD_PRELOAD
+#if MALLOC_UNIXLIKE_OVERLOAD_ENABLED
 
 /*** service functions and variables ***/
 
@@ -52,8 +53,8 @@ static inline void initPageSize()
     memoryPageSize = sysconf(_SC_PAGESIZE);
 }
 
-/* For the expected behaviour (i.e., finding malloc/free/etc from libc.so, 
-   not from ld-linux.so) dlsym(RTLD_NEXT) should be called from 
+/* For the expected behaviour (i.e., finding malloc/free/etc from libc.so,
+   not from ld-linux.so) dlsym(RTLD_NEXT) should be called from
    a LD_PRELOADed library, not another dynamic library.
    So we have to put find_original_malloc here.
  */
@@ -67,7 +68,7 @@ extern "C" bool __TBB_internal_find_original_malloc(int num, const char *names[]
     return true;
 }
 
-/* __TBB_malloc_proxy used as a weak symbol by libtbbmalloc for: 
+/* __TBB_malloc_proxy used as a weak symbol by libtbbmalloc for:
    1) detection that the proxy library is loaded
    2) check that dlsym("malloc") found something different from our replacement malloc
 */
@@ -122,7 +123,7 @@ void * valloc(size_t size) __THROW
     return scalable_aligned_malloc(size, memoryPageSize);
 }
 
-/* pvalloc allocates smallest set of complete pages which can hold 
+/* pvalloc allocates smallest set of complete pages which can hold
    the requested number of bytes. Result is aligned on page boundary. */
 void * pvalloc(size_t size) __THROW
 {
@@ -137,6 +138,20 @@ int mallopt(int /*param*/, int /*value*/) __THROW
 {
     return 1;
 }
+
+#if !__ANDROID__
+// Those non-standart functions are exported by GLIBC, and might be used
+// in conjunction with standart malloc/free, so we must ovberload them.
+// Bionic doesn't have them. Not removing from the linker scripts,
+// as absent entry points are ignored by the linker.
+void *__libc_malloc(size_t size) __attribute__ ((alias ("malloc")));
+void *__libc_realloc(void *ptr, size_t size) __attribute__ ((alias ("realloc")));
+void *__libc_calloc(size_t num, size_t size) __attribute__ ((alias ("calloc")));
+void __libc_free(void *ptr) __attribute__ ((alias ("free")));
+void *__libc_memalign(size_t alignment, size_t size) __attribute__ ((alias ("memalign")));
+void *__libc_pvalloc(size_t size) __attribute__ ((alias ("pvalloc")));
+void *__libc_valloc(size_t size) __attribute__ ((alias ("valloc")));
+#endif
 
 } /* extern "C" */
 
@@ -192,11 +207,13 @@ void operator delete[](void* ptr, const std::nothrow_t&) throw() {
     scalable_free(ptr);
 }
 
-#endif /* MALLOC_LD_PRELOAD */
+#endif /* MALLOC_UNIXLIKE_OVERLOAD_ENABLED */
 
 
 #ifdef _WIN32
 #include <windows.h>
+
+#if !__TBB_WIN8UI_SUPPORT
 
 #include <stdio.h>
 #include "tbb_function_replacement.h"
@@ -235,7 +252,7 @@ void* safer_scalable_aligned_realloc_##CRTLIB( void *ptr, size_t size, size_t al
 {                                                                                         \
     orig_ptrs func_ptrs = {orig_free_##CRTLIB, orig_msize_##CRTLIB};                      \
     return safer_scalable_aligned_realloc( ptr, size, aligment, &func_ptrs );             \
-} 
+}
 
 // limit is 30 bytes/60 symbols per line
 const char* known_bytecodes[] = {
@@ -250,6 +267,7 @@ const char* known_bytecodes[] = {
     "558BEC6A018B",           //debug free() & _msize() 8.0.50727.4053 win32
     "6A1868********E8",       //release free() 8.0.50727.4053 win32
     "6A1C68********E8",       //release _msize() 8.0.50727.4053 win32
+    "558BEC837D08000F",       //release _msize() 11.0.51106.1 win32
     "8BFF558BEC6A",           //debug free() & _msize() 9.0.21022.8 win32
     "8BFF558BEC83",           //debug free() & _msize() 10.0.21003.1 win32
 #endif
@@ -361,11 +379,11 @@ _aligned_malloc
 _expand (by dummy implementation)
 ??2@YAPAXI@Z      operator new                         (ia32)
 ??_U@YAPAXI@Z     void * operator new[] (size_t size)  (ia32)
-??3@YAXPAX@Z      operator delete                      (ia32)  
+??3@YAXPAX@Z      operator delete                      (ia32)
 ??_V@YAXPAX@Z     operator delete[]                    (ia32)
 ??2@YAPEAX_K@Z    void * operator new(unsigned __int64)   (intel64)
 ??_V@YAXPEAX@Z    void * operator new[](unsigned __int64) (intel64)
-??3@YAXPEAX@Z     operator delete                         (intel64)  
+??3@YAXPEAX@Z     operator delete                         (intel64)
 ??_V@YAXPEAX@Z    operator delete[]                       (intel64)
 ??2@YAPAXIABUnothrow_t@std@@@Z      void * operator new (size_t sz, const std::nothrow_t&) throw()  (optional)
 ??_U@YAPAXIABUnothrow_t@std@@@Z     void * operator new[] (size_t sz, const std::nothrow_t&) throw() (optional)
@@ -395,7 +413,7 @@ FRDATA routines_to_replace[] = {
     { "??_U@YAPEAX_K@Z", (FUNCPTR)operator_new_arr, FRR_FAIL },
     { "??3@YAXPEAX@Z", (FUNCPTR)operator_delete, FRR_FAIL },
     { "??_V@YAXPEAX@Z", (FUNCPTR)operator_delete_arr, FRR_FAIL },
-#else 
+#else
     { "??2@YAPAXI@Z", (FUNCPTR)operator_new, FRR_FAIL },
     { "??_U@YAPAXI@Z", (FUNCPTR)operator_new_arr, FRR_FAIL },
     { "??3@YAXPAX@Z", (FUNCPTR)operator_delete, FRR_FAIL },
@@ -455,10 +473,13 @@ void doMallocReplacement()
         }
 }
 
+#endif // !__TBB_WIN8UI_SUPPORT
+
 extern "C" BOOL WINAPI DllMain( HINSTANCE hInst, DWORD callReason, LPVOID reserved )
 {
 
     if ( callReason==DLL_PROCESS_ATTACH && reserved && hInst ) {
+#if !__TBB_WIN8UI_SUPPORT
 #if TBBMALLOC_USE_TBB_FOR_ALLOCATOR_ENV_CONTROLLED
         char pinEnvVariable[50];
         if( GetEnvironmentVariable("TBBMALLOC_USE_TBB_FOR_ALLOCATOR", pinEnvVariable, 50))
@@ -468,6 +489,7 @@ extern "C" BOOL WINAPI DllMain( HINSTANCE hInst, DWORD callReason, LPVOID reserv
 #else
         doMallocReplacement();
 #endif
+#endif // !__TBB_WIN8UI_SUPPORT
     }
 
     return TRUE;

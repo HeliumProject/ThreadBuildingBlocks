@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -93,5 +93,7 @@ inline void __TBB_set_cpu_ctl_env ( const __TBB_cpu_ctl_env_t* ctl ) {
     );
 }
 #endif /* !__TBB_CPU_CTL_ENV_PRESENT */
+
+#include "gcc_itsx.h"
 
 #endif /* __TBB_machine_gcc_ia32_common_H */

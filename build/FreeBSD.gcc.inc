@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -57,7 +57,7 @@ TBB_ASM.OBJ=
 MALLOC_ASM.OBJ=
 
 ifeq (ia64,$(arch))
-# Position-independent code (PIC) is a must on IA-64, even for regular (not shared) executables
+# Position-independent code (PIC) is a must on IA-64 architecture, even for regular (not shared) executables
     CPLUS_FLAGS += $(PIC_KEY)
 endif 
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -49,6 +49,10 @@ basic_tls<generic_scheduler*> governor::theTLS;
 unsigned governor::DefaultNumberOfThreads;
 rml::tbb_factory governor::theRMLServerFactory;
 bool governor::UsePrivateRML;
+const task_scheduler_init *governor::BlockingTSI;
+#if TBB_USE_ASSERT
+bool governor::IsBlockingTermiantionInProgress;
+#endif
 
 //------------------------------------------------------------------------
 // market data
@@ -81,6 +85,7 @@ bool __TBB_InitOnce::InitializationDone;
 //! Pointer to the scheduler factory function
 generic_scheduler* (*AllocateSchedulerPtr)( arena*, size_t index );
 
+#if __TBB_OLD_PRIMES_RNG
 //! Table of primes used by fast random-number generator (FastRandom).
 /** Also serves to keep anything else from being placed in the same
     cache line as the global data items preceding it. */
@@ -114,6 +119,7 @@ static const unsigned Primes[] = {
 unsigned GetPrime ( unsigned seed ) {
     return Primes[seed%(sizeof(Primes)/sizeof(Primes[0]))];
 }
+#endif //__TBB_OLD_PRIMES_RNG
 
 //------------------------------------------------------------------------
 // __TBB_InitOnce

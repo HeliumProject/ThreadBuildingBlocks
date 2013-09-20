@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -48,6 +48,7 @@ LINK_FLAGS += -M$(tbb_root)/build/suncc.map.pause
 LIBS = -lpthread -lrt -R .
 C_FLAGS = $(CPLUS_FLAGS)
 
+#TODO: the $(stdlib) instead of hard-wiring STLPort 
 ifeq ($(cfg), release)
         CPLUS_FLAGS = -mt -xO2 -library=stlport4 -DUSE_PTHREAD $(WARNING_SUPPRESS)
 endif

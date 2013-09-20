@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -138,7 +138,7 @@ void video::main_loop()
     pthread_attr_init(&attr);
     pthread_create(&handle,&attr,&thread_func,(void*)NULL);
     pthread_detach(handle);
-    cocoa_main( NULL, NULL );    
+    cocoa_main( 0, NULL );
 }
 
 //! Change window title

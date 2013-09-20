@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -32,7 +32,9 @@
 
 #include "harness.h"
 #include "harness_barrier.h"
+#if !__TBB_SOURCE_DIRECTLY_INCLUDED
 #include "harness_tbb_independence.h"
+#endif
 
 tbb::atomic<int> FinishedTasks;
 const int MaxTasks = 16;

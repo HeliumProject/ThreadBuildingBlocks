@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -27,27 +27,33 @@
 */
 
 
+#if (_WIN32 || _WIN64) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_APP)
+// As the test is intentionally build with /EHs-, suppress multiple VS2005's 
+// warnings like C4530: C++ exception handler used, but unwind semantics are not enabled
+// The test is skipped under Win8/UI, so do nothing.
+#if defined(_MSC_VER) && !__INTEL_COMPILER
+/* ICC 10.1 and 11.0 generates code that uses std::_Raise_handler,
+   but it's only defined in libcpmt(d), which the test doesn't linked with.
+ */
+#undef  _HAS_EXCEPTIONS
+#define _HAS_EXCEPTIONS 0
+#endif
+// to use strdup and putenv w/o warnings
+#define _CRT_NONSTDC_NO_DEPRECATE 1
+#endif // _WIN32 || _WIN64
+
+#define HARNESS_NO_PARSE_COMMAND_LINE 1
+#include "harness.h"
+
 #if __linux__
 #define MALLOC_REPLACEMENT_AVAILABLE 1
-#elif _WIN32 && !__MINGW32__ && !__MINGW64__
+#elif _WIN32 && !__MINGW32__ && !__MINGW64__ && !__TBB_WIN8UI_SUPPORT
 #define MALLOC_REPLACEMENT_AVAILABLE 2
 #include "tbb/tbbmalloc_proxy.h"
 #endif
 
 #if MALLOC_REPLACEMENT_AVAILABLE
 
-#if _WIN32 || _WIN64
-// As the test is intentionally build with /EHs-, suppress multiple VS2005's 
-// warnings like C4530: C++ exception handler used, but unwind semantics are not enabled
-#if defined(_MSC_VER) && !__INTEL_COMPILER
-/* ICC 10.1 and 11.0 generates code that uses std::_Raise_handler,
-   but it's only defined in libcpmt(d), which the test doesn't linked with.
- */
-#define _HAS_EXCEPTIONS 0
-#endif
-// to use strdup and putenv w/o warnings
-#define _CRT_NONSTDC_NO_DEPRECATE 1
-#endif
 #include "harness_report.h"
 #include "harness_assert.h"
 #include "harness_defs.h"
@@ -62,6 +68,16 @@
 #include <unistd.h> // for sysconf
 #include <stdint.h> // for uintptr_t
 
+extern "C" {
+void *__libc_malloc(size_t size);
+void *__libc_realloc(void *ptr, size_t size);
+void *__libc_calloc(size_t num, size_t size);
+void __libc_free(void *ptr);
+void *__libc_memalign(size_t alignment, size_t size);
+void *__libc_pvalloc(size_t size);
+void *__libc_valloc(size_t size);
+}
+
 #elif _WIN32
 #include <stddef.h>
 #if __MINGW32__
@@ -75,7 +91,7 @@ typedef unsigned __int64 uint64_t;
 #endif /* OS selection */
 
 #if _WIN32
-// On Windows, the tricky way to print "done" is necessary to create 
+// On Windows, the trick with string "dependence on msvcpXX.dll" is necessary to create 
 // dependence on msvcpXX.dll, for sake of a regression test.
 // On Linux, C++ RTL headers are undesirable because of breaking strict ANSI mode.
 #if defined(_MSC_VER) && _MSC_VER >= 1300 && _MSC_VER <= 1310 && !defined(__INTEL_COMPILER)
@@ -178,14 +194,57 @@ struct BigStruct {
     char f[minLargeObjectSize];
 };
 
-int main(int , char *[]) {
+void CheckStdFuncOverload(void *(*malloc_p)(size_t), void *(*calloc_p)(size_t, size_t),
+                          void *(*realloc_p)(void *, size_t), void (*free_p)(void *))
+{
+    void *ptr = malloc_p(minLargeObjectSize);
+    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, minLargeObjectSize), NULL);
+    free(ptr);
+
+    ptr = calloc_p(minLargeObjectSize, 2);
+    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, minLargeObjectSize*2), NULL);
+    void *ptr1 = realloc_p(ptr, minLargeObjectSize*10);
+    ASSERT(ptr1!=NULL && scalableMallocLargeBlock(ptr1, minLargeObjectSize*10), NULL);
+    free_p(ptr1);
+
+}
+
+#if MALLOC_REPLACEMENT_AVAILABLE == 1
+
+void CheckUnixAlignFuncOverload(void *(*memalign_p)(size_t, size_t),
+                                void *(*valloc_p)(size_t), void (*free_p)(void*))
+{
+    void *ptr = memalign_p(128, 4*minLargeObjectSize);
+    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, 4*minLargeObjectSize), NULL);
+    free_p(ptr);
+
+    ptr = valloc_p(minLargeObjectSize);
+    ASSERT(ptr!=NULL && isAligned(ptr, sysconf(_SC_PAGESIZE)) &&
+           scalableMallocLargeBlock(ptr, minLargeObjectSize), NULL);
+    free_p(ptr);
+}
+
+#if __TBB_PVALLOC_PRESENT
+void CheckPvalloc(void *(*pvalloc_p)(size_t), void (*free_p)(void*))
+{
+    long memoryPageSize = sysconf(_SC_PAGESIZE);
+    int sz = 1024*minLargeObjectSize;
+    void *ptr = pvalloc_p(sz);
+    ASSERT(ptr!=NULL &&                // align size up to the page size
+           scalableMallocLargeBlock(ptr, ((sz-1) | (memoryPageSize-1)) + 1), NULL);
+    free_p(ptr);
+}
+#else
+#define CheckPvalloc(alloc_p, free_p) ((void)0)
+#endif
+
+#endif // MALLOC_REPLACEMENT_AVAILABLE
+
+int TestMain() {
     void *ptr, *ptr1;
 
 #if MALLOC_REPLACEMENT_AVAILABLE == 1
-    if (NULL == dlsym(RTLD_DEFAULT, "scalable_malloc")) {
-        REPORT("libtbbmalloc not found\nfail\n");
-        return 1;
-    }
+    ASSERT(dlsym(RTLD_DEFAULT, "scalable_malloc"), "libtbbmalloc not found");
 #endif
 
 /* On Windows, memory block size returned by _msize() is sometimes used 
@@ -209,16 +268,7 @@ int main(int , char *[]) {
     free(pathCopy);
     free(newEnv);
 
-    ptr = malloc(minLargeObjectSize);
-    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, minLargeObjectSize), NULL);
-    free(ptr);
-
-    ptr = calloc(minLargeObjectSize, 2);
-    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, minLargeObjectSize*2), NULL);
-    ptr1 = realloc(ptr, minLargeObjectSize*10);
-    ASSERT(ptr1!=NULL && scalableMallocLargeBlock(ptr1, minLargeObjectSize*10), NULL);
-    free(ptr1);
-
+    CheckStdFuncOverload(malloc, calloc, realloc, free);
 #if MALLOC_REPLACEMENT_AVAILABLE == 1
 
 #if __TBB_POSIX_MEMALIGN_PRESENT
@@ -227,28 +277,23 @@ int main(int , char *[]) {
     free(ptr);
 #endif
 
-    ptr = memalign(128, 4*minLargeObjectSize);
-    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, 4*minLargeObjectSize), NULL);
-    free(ptr);
-
-    ptr = valloc(minLargeObjectSize);
-    ASSERT(ptr!=NULL && scalableMallocLargeBlock(ptr, minLargeObjectSize), NULL);
-    free(ptr);
-
-#if __TBB_PVALLOC_PRESENT
-    long memoryPageSize = sysconf(_SC_PAGESIZE);
-    int sz = 1024*minLargeObjectSize;
-    ptr = pvalloc(sz);
-    ASSERT(ptr!=NULL &&                // align size up to the page size
-           scalableMallocLargeBlock(ptr, ((sz-1) | (memoryPageSize-1)) + 1), NULL);
-    free(ptr);
-#endif
+    CheckUnixAlignFuncOverload(memalign, valloc, free);
+    CheckPvalloc(pvalloc, free);
 
     struct mallinfo info = mallinfo();
     // right now mallinfo initialized by zero
     ASSERT(!info.arena && !info.ordblks && !info.smblks && !info.hblks 
            && !info.hblkhd && !info.usmblks && !info.fsmblks 
            && !info.uordblks && !info.fordblks && !info.keepcost, NULL);
+
+#if __linux__ && !__ANDROID__
+    // Those non-standart functions are exported by GLIBC, and might be used
+    // in conjunction with standart malloc/free. Test that we ovrload them as well.
+    // Bionic doesn't have them.
+    CheckStdFuncOverload(__libc_malloc, __libc_calloc, __libc_realloc, __libc_free);
+    CheckUnixAlignFuncOverload(__libc_memalign, __libc_valloc, __libc_free);
+    CheckPvalloc(__libc_pvalloc, __libc_free);
+#endif // __linux__
 
 #elif MALLOC_REPLACEMENT_AVAILABLE == 2
 
@@ -278,24 +323,17 @@ int main(int , char *[]) {
     delete []f;
 
 #if _WIN32
-    std::string stdstring = "done";
-    const char* s = stdstring.c_str();
-#else
-    const char* s = "done";
+    std::string stdstring = "dependence on msvcpXX.dll";
+    ASSERT(strcmp(stdstring.c_str(), "dependence on msvcpXX.dll") == 0, NULL);
 #endif
-    REPORT("%s\n", s);
-    return 0;
-}
 
-#define HARNESS_NO_PARSE_COMMAND_LINE 1
-#define HARNESS_CUSTOM_MAIN 1
-#include "harness.h"
+    return Harness::Done;
+}
 
 #else  /* !MALLOC_REPLACEMENT_AVAILABLE */
 #include <stdio.h>
 
-int main(int , char *[]) {
-    printf("skip\n");
-    return 0;
+int TestMain() {
+    return Harness::Skipped;
 }
 #endif /* !MALLOC_REPLACEMENT_AVAILABLE */

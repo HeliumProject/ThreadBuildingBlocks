@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -34,6 +34,7 @@
 #include "mailbox.h"
 #include "observer_proxy.h"
 #include "tbb/tbb_machine.h"
+#include "tbb/atomic.h"
 
 namespace tbb {
 namespace internal {
@@ -50,7 +51,7 @@ inline generic_scheduler* allocate_scheduler ( arena* a, size_t index ) {
 }
 
 #if __TBB_TASK_GROUP_CONTEXT
-spin_mutex the_context_state_propagation_mutex;
+context_state_propagation_mutex_type the_context_state_propagation_mutex;
 
 uintptr_t the_context_state_propagation_epoch = 0;
 
@@ -91,8 +92,11 @@ scheduler::~scheduler( ) {}
 generic_scheduler::generic_scheduler( arena* a, size_t index )
     : my_stealing_threshold(0)
     , my_market(NULL)
-    , my_random( unsigned(this-(generic_scheduler*)NULL) )
+    , my_random( this )
     , my_free_list(NULL)
+#if __TBB_HOARD_NONLOCAL_TASKS
+    , my_nonlocal_free_list(NULL)
+#endif
     , my_dummy_task(NULL)
     , my_ref_count(1)
     , my_auto_initialized(false)
@@ -130,7 +134,7 @@ generic_scheduler::generic_scheduler( arena* a, size_t index )
     my_last_local_observer = NULL;
 #endif /* __TBB_SCHEDULER_OBSERVER */
 
-    hint_for_push = index ^ unsigned(this-(generic_scheduler*)NULL)>>16; // randomizer seed
+    hint_for_push = index ^ my_random.get(); // randomizer seed
     my_dummy_task = &allocate_task( sizeof(task), __TBB_CONTEXT_ARG(NULL, NULL) );
 #if __TBB_TASK_GROUP_CONTEXT
     my_context_list_head.my_prev = &my_context_list_head;
@@ -222,7 +226,7 @@ void generic_scheduler::init_stack_info () {
                 if ( 0 == pthread_attr_getstacksize(&attr_stack, &stack_size) ) {
                     if ( np_stack_size < stack_size ) {
                         // We are in a secondary thread. Use reliable data.
-                        // IA64 stack is split into RSE backup and memory parts
+                        // IA-64 architecture stack is split into RSE backup and memory parts
                         rsb_base = stack_limit;
                         stack_size = np_stack_size/2;
                         // Limit of the memory part of the stack
@@ -234,7 +238,7 @@ void generic_scheduler::init_stack_info () {
                 }
                 pthread_attr_destroy(&attr_stack);
             }
-            // IA64 stack is split into RSE backup and memory parts
+            // IA-64 architecture stack is split into RSE backup and memory parts
             my_rsb_stealing_threshold = (uintptr_t)((char*)rsb_base + stack_size/2);
 #endif /* __TBB_ipf */
             // Size of the stack free part 
@@ -265,7 +269,7 @@ void generic_scheduler::cleanup_local_context_list () {
         // Full fence prevents reordering of store to my_local_ctx_list_update with
         // load from my_nonlocal_ctx_list_update.
         atomic_fence();
-        // Check for the conflict with concurrent destroyer or cancelation propagator
+        // Check for the conflict with concurrent destroyer or cancellation propagator
         if ( my_nonlocal_ctx_list_update.load<relaxed>() || local_count_snapshot != the_context_state_propagation_epoch )
             lock.acquire(my_context_list_mutex);
         // No acquire fence is necessary for loading my_context_list_head.my_next,
@@ -296,6 +300,14 @@ void generic_scheduler::free_scheduler() {
 #endif /* __TBB_TASK_GROUP_CONTEXT */
     free_task<small_local_task>( *my_dummy_task );
 
+#if __TBB_HOARD_NONLOCAL_TASKS
+    while( task* t = my_nonlocal_free_list ) {
+        task_prefix& p = t->prefix();
+        my_nonlocal_free_list = p.next;
+        __TBB_ASSERT( p.origin && p.origin!=this, NULL );
+        free_nonlocal_small_task(*t);
+    }
+#endif
     // k accounts for a guard reference and each task that we deallocate.
     intptr_t k = 1;
     for(;;) {
@@ -321,9 +333,16 @@ void generic_scheduler::free_scheduler() {
 task& generic_scheduler::allocate_task( size_t number_of_bytes,
                                             __TBB_CONTEXT_ARG(task* parent, task_group_context* context) ) {
     GATHER_STATISTIC(++my_counters.active_tasks);
-    task* t = my_free_list;
+    task *t;
     if( number_of_bytes<=quick_task_size ) {
-        if( t ) {
+#if __TBB_HOARD_NONLOCAL_TASKS
+        if( (t = my_nonlocal_free_list) ) {
+            GATHER_STATISTIC(--my_counters.free_list_length);
+            __TBB_ASSERT( t->state()==task::freed, "free list of tasks is corrupted" );
+            my_nonlocal_free_list = t->prefix().next;
+        } else
+#endif
+        if( (t = my_free_list) ) {
             GATHER_STATISTIC(--my_counters.free_list_length);
             __TBB_ASSERT( t->state()==task::freed, "free list of tasks is corrupted" );
             my_free_list = t->prefix().next;
@@ -335,16 +354,33 @@ task& generic_scheduler::allocate_task( size_t number_of_bytes,
             ITT_NOTIFY( sync_acquired, &my_return_list );
             my_free_list = t->prefix().next;
         } else {
-            t = (task*)((char*)NFS_Allocate( task_prefix_reservation_size+quick_task_size, 1, NULL ) + task_prefix_reservation_size );
+            t = (task*)((char*)NFS_Allocate( 1, task_prefix_reservation_size+quick_task_size, NULL ) + task_prefix_reservation_size );
 #if __TBB_COUNT_TASK_NODES
             ++my_task_node_count;
 #endif /* __TBB_COUNT_TASK_NODES */
             t->prefix().origin = this;
+            t->prefix().next = 0;
             ++my_small_task_count;
         }
+#if __TBB_PREFETCHING
+        task *t_next = t->prefix().next;
+        if( !t_next ) { // the task was last in the list
+#if __TBB_HOARD_NONLOCAL_TASKS
+            if( my_free_list )
+                t_next = my_free_list;
+            else
+#endif
+            if( my_return_list ) // enable prefetching, gives speedup
+                t_next = my_free_list = (task*)__TBB_FetchAndStoreW( &my_return_list, 0 );
+        }
+        if( t_next ) { // gives speedup for both cache lines
+            __TBB_cl_prefetch(t_next);
+            __TBB_cl_prefetch(&t_next->prefix());
+        }
+#endif /* __TBB_PREFETCHING */
     } else {
         GATHER_STATISTIC(++my_counters.big_tasks);
-        t = (task*)((char*)NFS_Allocate( task_prefix_reservation_size+number_of_bytes, 1, NULL ) + task_prefix_reservation_size );
+        t = (task*)((char*)NFS_Allocate( 1, task_prefix_reservation_size+number_of_bytes, NULL ) + task_prefix_reservation_size );
 #if __TBB_COUNT_TASK_NODES
         ++my_task_node_count;
 #endif /* __TBB_COUNT_TASK_NODES */
@@ -379,8 +415,11 @@ void generic_scheduler::free_nonlocal_small_task( task& t ) {
         // Atomically insert t at head of s.my_return_list
         t.prefix().next = old;
         ITT_NOTIFY( sync_releasing, &s.my_return_list );
-        if( __TBB_CompareAndSwapW( &s.my_return_list, (intptr_t)&t, (intptr_t)old )==(intptr_t)old ) {
-            GATHER_STATISTIC(++my_counters.free_list_length);
+        if( as_atomic(s.my_return_list).compare_and_swap(&t, old )==old ) {
+#if __TBB_PREFETCHING
+            __TBB_cl_evict(&t.prefix());
+            __TBB_cl_evict(&t);
+#endif
             return;
         }
     }
@@ -440,9 +479,8 @@ size_t generic_scheduler::prepare_task_pool ( size_t num_tasks ) {
 inline void generic_scheduler::acquire_task_pool() const {
     if ( !in_arena() )
         return; // we are not in arena - nothing to lock
-    atomic_backoff backoff;
     bool sync_prepare_done = false;
-    for(;;) {
+    for( atomic_backoff b;;b.pause() ) {
 #if TBB_USE_ASSERT
         __TBB_ASSERT( my_arena_slot == my_arena->my_slots + my_arena_index, "invalid arena slot index" );
         // Local copy of the arena slot task pool pointer is necessary for the next
@@ -451,8 +489,7 @@ inline void generic_scheduler::acquire_task_pool() const {
         __TBB_ASSERT( tp == LockedTaskPool || tp == my_arena_slot->task_pool_ptr, "slot ownership corrupt?" );
 #endif
         if( my_arena_slot->task_pool != LockedTaskPool &&
-            __TBB_CompareAndSwapW( &my_arena_slot->task_pool, (intptr_t)LockedTaskPool,
-                                   (intptr_t)my_arena_slot->task_pool_ptr ) == (intptr_t)my_arena_slot->task_pool_ptr )
+            as_atomic(my_arena_slot->task_pool).compare_and_swap(LockedTaskPool, my_arena_slot->task_pool_ptr ) == my_arena_slot->task_pool_ptr )
         {
             // We acquired our own slot
             ITT_NOTIFY(sync_acquired, my_arena_slot);
@@ -464,7 +501,6 @@ inline void generic_scheduler::acquire_task_pool() const {
             sync_prepare_done = true;
         }
         // Someone else acquired a lock, so pause and do exponential backoff.
-        backoff.pause();
     }
     __TBB_ASSERT( my_arena_slot->task_pool == LockedTaskPool, "not really acquired task pool" );
 } // generic_scheduler::acquire_task_pool
@@ -486,9 +522,8 @@ inline void generic_scheduler::release_task_pool() const {
     Thus if any of them is changed, consider changing the counterpart as well **/
 inline task** generic_scheduler::lock_task_pool( arena_slot* victim_arena_slot ) const {
     task** victim_task_pool;
-    atomic_backoff backoff;
     bool sync_prepare_done = false;
-    for(;;) {
+    for( atomic_backoff backoff;; /*backoff pause embedded in the loop*/) {
         victim_task_pool = victim_arena_slot->task_pool;
         // NOTE: Do not use comparison of head and tail indices to check for
         // the presence of work in the victim's task pool, as they may give
@@ -500,8 +535,7 @@ inline task** generic_scheduler::lock_task_pool( arena_slot* victim_arena_slot )
             break;
         }
         if( victim_task_pool != LockedTaskPool &&
-            __TBB_CompareAndSwapW( &victim_arena_slot->task_pool,
-                (intptr_t)LockedTaskPool, (intptr_t)victim_task_pool ) == (intptr_t)victim_task_pool )
+            as_atomic(victim_arena_slot->task_pool).compare_and_swap(LockedTaskPool, victim_task_pool ) == victim_task_pool )
         {
             // We've locked victim's task pool
             ITT_NOTIFY(sync_acquired, victim_arena_slot);
@@ -514,7 +548,20 @@ inline task** generic_scheduler::lock_task_pool( arena_slot* victim_arena_slot )
         }
         GATHER_STATISTIC( ++my_counters.thieves_conflicts );
         // Someone else acquired a lock, so pause and do exponential backoff.
+#if __TBB_STEALING_ABORT_ON_CONTENTION
+        if(!backoff.bounded_pause()) {
+            // the 16 was acquired empirically and a theory behind it supposes
+            // that number of threads becomes much bigger than number of
+            // tasks which can be spawned by one thread causing excessive contention.
+            // TODO: However even small arenas can benefit from the abort on contention
+            //       if preemption of a thief is a problem
+            if(my_arena->my_limit >= 16)
+                return EmptyTaskPool;
+            __TBB_Yield();
+        }
+#else
         backoff.pause();
+#endif
     }
     __TBB_ASSERT( victim_task_pool == EmptyTaskPool ||
                   (victim_arena_slot->task_pool == LockedTaskPool && victim_task_pool != LockedTaskPool),
@@ -633,11 +680,7 @@ void tbb::internal::generic_scheduler::enqueue( task& t, void* prio ) {
     generic_scheduler *s = governor::local_scheduler();
     // these redirections are due to bw-compatibility, consider reworking some day
     __TBB_ASSERT( s->my_arena, "thread is not in any arena" );
-    s->my_arena->enqueue_task(t,
-#if __TBB_TASK_PRIORITY
-                               (priority_t)(intptr_t)prio,
-#endif /* __TBB_TASK_PRIORITY */
-                               s->hint_for_push );
+    s->my_arena->enqueue_task(t, (intptr_t)prio, s->hint_for_push );
 }
 
 inline task* generic_scheduler::dequeue_task() {
@@ -840,7 +883,6 @@ retry:
         size_t H = __TBB_load_relaxed(my_arena_slot->head); // mirror
         if ( (intptr_t)H <= (intptr_t)T ) {
             // The thief backed off - grab the task
-            // Task pool pointer from our arena slot is garbled by above taken lock.
             result = my_arena_slot->task_pool_ptr[T];
             __TBB_ASSERT( !is_poisoned(result), NULL );
             poison_pointer( my_arena_slot->task_pool_ptr[T] );
@@ -939,8 +981,13 @@ retry:
         }
         poison_pointer( victim_pool[H0] );
     }
+
     unlock_task_pool( &victim_slot, victim_pool );
     __TBB_ASSERT( skip_and_bump <= 2, NULL );
+#if __TBB_PREFETCHING
+    __TBB_cl_evict(&victim_slot.head);
+    __TBB_cl_evict(&victim_slot.tail);
+#endif
     if( --skip_and_bump > 0 ) { // if both: task skipped and head&tail bumped
         // Synchronize with snapshot as we bumped head and tail which can falsely trigger EMPTY state
         atomic_fence();
@@ -1085,8 +1132,9 @@ void generic_scheduler::cleanup_master() {
             __TBB_ASSERT ( governor::is_set(this), "Other thread reused our TLS key during the task pool cleanup" );
         }
     }
-#if _WIN32|_WIN64
     __TBB_ASSERT( s.my_market, NULL );
+    market *my_market = s.my_market;
+#if _WIN32|_WIN64
     s.my_market->unregister_master( s.master_exec_resource );
 #endif /* _WIN32|_WIN64 */
     arena* a = s.my_arena;
@@ -1098,7 +1146,7 @@ void generic_scheduler::cleanup_master() {
     __TBB_ASSERT( my_arena_slot->my_scheduler, NULL );
     // Master's scheduler may be locked by a worker taking arena snapshot or by
     // a thread propagating task group state change across the context tree.
-    while ( __TBB_CompareAndSwapW(&my_arena_slot->my_scheduler, 0, (intptr_t)this) != (intptr_t)this )
+    while ( as_atomic(my_arena_slot->my_scheduler).compare_and_swap(NULL, this) != this )
         __TBB_Yield();
     __TBB_ASSERT( !my_arena_slot->my_scheduler, NULL );
 #else /* !__TBB_TASK_PRIORITY */
@@ -1115,7 +1163,11 @@ void generic_scheduler::cleanup_master() {
 #if __TBB_STATISTICS_EARLY_DUMP
     GATHER_STATISTIC( a->dump_arena_statistics() );
 #endif
+    if (governor::needsWaitWorkers())
+        my_market->prepare_wait_workers();
     a->on_thread_leaving</*is_master*/true>();
+    if (governor::needsWaitWorkers())
+        my_market->wait_workers();
 }
 
 } // namespace internal
@@ -1174,23 +1226,21 @@ void generic_scheduler::cleanup_master() {
 
     However this version of the algorithm requires more analysis and verification.
 
-3.  There is no portable way to get stack base address in Posix, however
-    the modern Linux versions provide pthread_attr_np API that can be used
-    to obtain thread's stack size and base address. Unfortunately even this
-    function does not provide enough information for the main thread on IA64
-    (RSE spill area and memory stack are allocated as two separate discontinuous
-    chunks of memory), and there is no portable way to discern the main and
-    the secondary threads.
-    Thus for MacOS and IA64 Linux we use the TBB worker stack size for all
-    threads and use the current stack top as the stack base. This simplified
+3.  There is no portable way to get stack base address in Posix, however the modern
+    Linux versions provide pthread_attr_np API that can be used  to obtain thread's
+    stack size and base address. Unfortunately even this function does not provide
+    enough information for the main thread on IA-64 architecture (RSE spill area
+    and memory stack are allocated as two separate discontinuous chunks of memory),
+    and there is no portable way to discern the main and the secondary threads.
+    Thus for OS X* and IA-64 Linux architecture we use the TBB worker stack size for 
+    all threads and use the current stack top as the stack base. This simplified 
     approach is based on the following assumptions:
-    1) If the default stack size is insufficient for the user app needs,
-       the required amount will be explicitly specified by the user at
-       the point of the TBB scheduler initialization (as an argument to
-       tbb::task_scheduler_init constructor).
-    2) When a master thread initializes the scheduler, it has enough space
-       on its stack. Here "enough" means "at least as much as worker threads
-       have".
-    3) If the user app strives to conserve the memory by cutting stack size,
-       it should do this for TBB workers too (as in the #1).
+    1) If the default stack size is insufficient for the user app needs, the
+    required amount will be explicitly specified by the user at the point of the
+    TBB scheduler initialization (as an argument to tbb::task_scheduler_init
+    constructor).
+    2) When a master thread initializes the scheduler, it has enough space on its
+    stack. Here "enough" means "at least as much as worker threads have".
+    3) If the user app strives to conserve the memory by cutting stack size, it
+    should do this for TBB workers too (as in the #1).
 */

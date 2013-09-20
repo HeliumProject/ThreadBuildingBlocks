@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -28,6 +28,20 @@
 
 const unsigned MByte = 1024*1024;
 bool __tbb_test_errno = false;
+
+#include "tbb/tbb_config.h"
+
+#if __TBB_WIN8UI_SUPPORT	
+// testing allocator itself not iterfaces
+// so we can use desktop functions
+#define _CRT_USE_WINAPI_FAMILY_DESKTOP_APP 1
+#define HARNESS_NO_PARSE_COMMAND_LINE 1
+#include "harness.h"
+// FIXME: fix the test to support New Windows *8 Store Apps mode.
+int TestMain() {
+    return Harness::Skipped;
+}
+#else /* __TBB_WIN8UI_SUPPORT	 */
 
 /* _WIN32_WINNT should be defined at the very beginning,
    because other headers might include <windows.h>
@@ -100,7 +114,9 @@ void limitMem( size_t limit )
 #define HARNESS_CUSTOM_MAIN 1
 #include "harness.h"
 #include "harness_barrier.h"
+#if !__TBB_SOURCE_DIRECTLY_INCLUDED
 #include "harness_tbb_independence.h"
+#endif
 #if __linux__
 #include <stdint.h> // uintptr_t
 #endif
@@ -167,7 +183,7 @@ TestAlignedRealloc* Raligned_realloc;
 bool error_occurred = false;
 
 #if __APPLE__
-// Tests that use the variable are skipped on Mac OS* X
+// Tests that use the variable are skipped on OS X*
 #else
 static bool perProcessLimits = true;
 #endif
@@ -248,7 +264,7 @@ static void setSystemAllocs()
     Taligned_free=_aligned_free;
     Rposix_memalign=0;
 #elif  __APPLE__ || __sun || __ANDROID__ 
-// Mac OS* X, Solaris, and Android don't have posix_memalign
+// OS X*, Solaris, and Android don't have posix_memalign
     Raligned_malloc=0;
     Raligned_realloc=0;
     Taligned_free=0;
@@ -325,7 +341,7 @@ int main(int argc, char* argv[]) {
 #endif
     //-------------------------------------
 #if __APPLE__
-    /* Skip due to lack of memory limit enforcing under Mac OS X. */
+    /* Skip due to lack of memory limit enforcing under OS X*. */
 #else
     limitMem(200);
     ReallocParam();
@@ -1003,7 +1019,7 @@ void CMemTest::RunAllTests(int total_threads)
         InvariantDataRealloc(/*aligned=*/true);
     TestAlignedParameters();
 #if __APPLE__
-    REPORT("Known issue: some tests are skipped on Mac OS* X\n");
+    REPORT("Known issue: some tests are skipped on OS X*\n");
 #else
     UniquePointer();
     AddrArifm();
@@ -1013,3 +1029,6 @@ void CMemTest::RunAllTests(int total_threads)
 #endif
     if (FullLog) REPORT("Tests for %d threads ended\n", total_threads);
 }
+
+#endif /* __TBB_WIN8UI_SUPPORT	 */
+

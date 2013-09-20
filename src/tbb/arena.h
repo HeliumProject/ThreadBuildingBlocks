@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -45,6 +45,9 @@
 #include "../rml/include/rml_tbb.h"
 #include "mailbox.h"
 #include "observer_proxy.h"
+#if __TBB_TASK_ARENA
+#include "concurrent_monitor.h"
+#endif
 
 namespace tbb {
 
@@ -162,6 +165,11 @@ struct arena_base : intrusive_list_node {
     //! Indicates if there is an oversubscribing worker created to service enqueued tasks.
     bool my_mandatory_concurrency;
 
+#if __TBB_TASK_ARENA
+    //! exit notifications after arena slot is released
+    concurrent_monitor my_exit_monitors;
+#endif
+
 #if TBB_USE_ASSERT
     //! Used to trap accesses to the object after its destruction.
     uintptr_t my_guard;
@@ -186,7 +194,9 @@ private:
     friend class intrusive_list<arena>;
 #if __TBB_TASK_ARENA
     friend class tbb::interface6::task_arena; // included through in scheduler_common.h
+    friend class interface6::delegated_task;
     friend class interface6::wait_task;
+    friend struct interface6::wait_body;
 #endif //__TBB_TASK_ARENA
 
     typedef padded<arena_base> base_type;
@@ -250,11 +260,7 @@ private:
     bool is_out_of_work();
 
     //! enqueue a task into starvation-resistance queue
-#if __TBB_TASK_PRIORITY
-    void enqueue_task( task&, priority_t, unsigned & );
-#else /* !__TBB_TASK_PRIORITY */
-    void enqueue_task( task&, unsigned & );
-#endif /* !__TBB_TASK_PRIORITY */
+    void enqueue_task( task&, intptr_t, unsigned & );
 
     //! Registers the worker with the arena and enters TBB scheduler dispatch loop
     void process( generic_scheduler& );

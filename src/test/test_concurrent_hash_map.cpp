@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -77,16 +77,16 @@ namespace tbb {
     };
 }
 
-#if HARNESS_USE_PROXY
+#if HARNESS_USE_RUNTIME_LOADER
     #define TBB_PREVIEW_RUNTIME_LOADER 1
     #include "tbb/runtime_loader.h"
     static char const * test_path[] = { ".", NULL };
     static tbb::runtime_loader test_runtime_loader( test_path );
-#endif // HARNESS_USE_PROXY
+#endif // HARNESS_USE_RUNTIME_LOADER
 
 tbb::concurrent_hash_map<UserDefinedKeyType,int> TestInstantiationWithUserDefinedKeyType;
 
-// Test whether a sufficient set of headers were included to instantiate a concurernt_hash_map. OSS Bug #120 (& #130):
+// Test whether a sufficient set of headers were included to instantiate a concurrent_hash_map. OSS Bug #120 (& #130):
 // http://www.threadingbuildingblocks.org/bug_desc.php?id=120
 tbb::concurrent_hash_map<std::pair<std::pair<int,std::string>,const char*>,int> TestInstantiation;
 
@@ -917,6 +917,21 @@ void TestExceptions() {
 }
 #endif /* TBB_USE_EXCEPTIONS */
 
+
+#if __TBB_INITIALIZER_LISTS_PRESENT
+#include "test_initializer_list.h"
+
+void TestInitList(){
+    using namespace initializer_list_support_tests;
+    REMARK("testing initializer_list methods \n");
+
+    typedef tbb::concurrent_hash_map<int,int>::value_type value_type;
+    std::initializer_list<value_type > pairs_il = {{1,1},{2,2},{3,3},{4,4},{5,5}};
+
+    TestInitListSupportWithoutAssign<tbb::concurrent_hash_map<int,int> >(pairs_il);
+    TestInitListSupportWithoutAssign<tbb::concurrent_hash_map<int,int> >({});
+}
+#endif //if __TBB_INITIALIZER_LISTS_PRESENT
 //------------------------------------------------------------------------
 // Test driver
 //------------------------------------------------------------------------
@@ -936,6 +951,10 @@ int TestMain () {
     TestRehash();
     TestAssignment();
     TestIteratorsAndRanges();
+#if __TBB_INITIALIZER_LISTS_PRESENT
+    TestInitList();
+#endif //__TBB_INITIALIZER_LISTS_PRESENT
+
 #if TBB_USE_EXCEPTIONS
     TestExceptions();
 #endif /* TBB_USE_EXCEPTIONS */

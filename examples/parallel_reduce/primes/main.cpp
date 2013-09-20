@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -57,9 +57,9 @@ struct RunOptions{
 
 int do_get_default_num_threads() {
     int threads;
-    #if __TBB_MIC
+    #if __TBB_MIC_OFFLOAD
     #pragma offload target(mic) out(threads)
-    #endif // __TBB_MIC
+    #endif // __TBB_MIC_OFFLOAD
     threads = tbb::task_scheduler_init::default_num_threads();
     return threads;
 }
@@ -79,7 +79,7 @@ static RunOptions ParseCommandLine( int argc, const char* argv[] ) {
 
     utility::parse_cli_arguments(argc,argv,
         utility::cli_argument_pack()
-            //"-h" option for for displaying help is present implicitly
+            //"-h" option for displaying help is present implicitly
             .positional_arg(threads,"n-of-threads",utility::thread_number_range_desc)
             .positional_arg(number,"number","upper bound of range to search primes in, must be a positive integer")
             .positional_arg(grainSize,"grain-size","must be a positive integer")
@@ -102,15 +102,15 @@ int main( int argc, const char* argv[] ) {
             NumberType count = 0;
             NumberType n = options.n;
             if( p==0 ) {
-                #if __TBB_MIC
+                #if __TBB_MIC_OFFLOAD
                 #pragma offload target(mic) in(n) out(count)
-                #endif // __TBB_MIC
+                #endif // __TBB_MIC_OFFLOAD
                 count = SerialCountPrimes(n);
             } else {
                 NumberType grainSize = options.grainSize;
-                #if __TBB_MIC
+                #if __TBB_MIC_OFFLOAD
                 #pragma offload target(mic) in(n, p, grainSize) out(count)
-                #endif // __TBB_MIC
+                #endif // __TBB_MIC_OFFLOAD
                 count = ParallelCountPrimes(n, p, grainSize);
             }
             tbb::tick_count iterationEndMark = tbb::tick_count::now();

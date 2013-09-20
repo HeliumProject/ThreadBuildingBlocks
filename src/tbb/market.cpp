@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -113,7 +113,7 @@ market& market::global_market ( unsigned max_num_workers, size_t stack_size ) {
         size += sizeof(generic_scheduler*) * (max_num_workers - 1);
 #endif /* __TBB_TASK_GROUP_CONTEXT */
         __TBB_InitOnce::add_ref();
-        void* storage = NFS_Allocate(size, 1, NULL);
+        void* storage = NFS_Allocate(1, size, NULL);
         memset( storage, 0, size );
         // Initialize and publish global market
         m = new (storage) market( max_num_workers, stack_size );
@@ -146,11 +146,27 @@ void market::release () {
         my_server->request_close_connection();
 }
 
+void market::wait_workers () {
+    // usable for this kind of scheduler only
+    __TBB_ASSERT(governor::needsWaitWorkers(), NULL);
+    // wait till terminating last worker decresed my_ref_count
+    while (__TBB_load_with_acquire(my_ref_count) > 1)
+        __TBB_Yield();
+    __TBB_ASSERT(1 == my_ref_count, NULL);
+    release();
+}
+
 arena& market::create_arena ( unsigned max_num_workers, size_t stack_size ) {
     market &m = global_market( max_num_workers, stack_size ); // increases market's ref count
+#if __TBB_TASK_ARENA
+    // Prevent cutting an extra slot for task_arena(p,0) with default market (p-1 worketrs).
+    // This is a temporary workaround for 1968 until (TODO:) master slot reservation is reworked
+    arena& a = arena::allocate_arena( m, min(max_num_workers, m.my_max_num_workers+1) );
+#else
     arena& a = arena::allocate_arena( m, min(max_num_workers, m.my_max_num_workers) );
+#endif
     // Add newly created arena into the existing market's list.
-    spin_mutex::scoped_lock lock(m.my_arenas_list_mutex);
+    arenas_list_mutex_type::scoped_lock lock(m.my_arenas_list_mutex);
     m.insert_arena_into_list(a);
     return a;
 }
@@ -169,7 +185,7 @@ void market::detach_arena ( arena& a ) {
 
 void market::try_destroy_arena ( arena* a, uintptr_t aba_epoch ) {
     __TBB_ASSERT ( a, NULL );
-    spin_mutex::scoped_lock lock(my_arenas_list_mutex);
+    arenas_list_mutex_type::scoped_lock lock(my_arenas_list_mutex);
     assert_market_valid();
 #if __TBB_TASK_PRIORITY
     for ( int p = my_global_top_priority; p >= my_global_bottom_priority; --p ) {
@@ -290,7 +306,7 @@ arena* market::arena_in_need (
 #endif /* __TBB_TRACK_PRIORITY_LEVEL_SATURATION */
                              )
 {
-    spin_mutex::scoped_lock lock(my_arenas_list_mutex);
+    arenas_list_mutex_type::scoped_lock lock(my_arenas_list_mutex);
     assert_market_valid();
 #if __TBB_TRACK_PRIORITY_LEVEL_SATURATION
     if ( prev_arena ) {
@@ -518,9 +534,9 @@ void market::update_arena_top_priority ( arena& a, intptr_t new_priority ) {
     __TBB_ASSERT( prev_level.workers_requested >= 0 && new_level.workers_requested >= 0, NULL );
 }
 
-bool market::lower_arena_priority ( arena& a, intptr_t new_priority, intptr_t old_priority ) {
-    spin_mutex::scoped_lock lock(my_arenas_list_mutex);
-    if ( a.my_top_priority != old_priority ) {
+bool market::lower_arena_priority ( arena& a, intptr_t new_priority, uintptr_t old_reload_epoch ) {
+    arenas_list_mutex_type::scoped_lock lock(my_arenas_list_mutex);
+    if ( a.my_reload_epoch != old_reload_epoch ) {
         assert_market_valid();
         return false;
     }
@@ -545,7 +561,7 @@ bool market::lower_arena_priority ( arena& a, intptr_t new_priority, intptr_t ol
 }
 
 bool market::update_arena_priority ( arena& a, intptr_t new_priority ) {
-    spin_mutex::scoped_lock lock(my_arenas_list_mutex);
+    arenas_list_mutex_type::scoped_lock lock(my_arenas_list_mutex);
     if ( a.my_top_priority == new_priority ) {
         assert_market_valid();
         return false;

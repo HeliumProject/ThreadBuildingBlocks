@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -58,9 +58,11 @@
     #undef private
 #endif
 
-#if __TBB_TASK_GROUP_CONTEXT
+#ifndef __TBB_SCHEDULER_MUTEX_TYPE
+#define __TBB_SCHEDULER_MUTEX_TYPE tbb::spin_mutex
+#endif
+// TODO: add conditional inclusion based on specified type
 #include "tbb/spin_mutex.h"
-#endif /* __TBB_TASK_GROUP_CONTEXT */
 
 // This macro is an attempt to get rid of ugly ifdefs in the shared parts of the code.
 // It drops the second argument depending on whether the controlling macro is defined.
@@ -88,7 +90,9 @@
 namespace tbb {
 #if __TBB_TASK_ARENA
 namespace interface6 {
+class delegated_task;
 class wait_task;
+struct wait_body;
 }
 #endif //__TBB_TASK_ARENA
 namespace internal {
@@ -116,6 +120,9 @@ inline intptr_t& priority ( task& t ) {
 }
 #endif /* __TBB_TASK_PRIORITY */
 
+//! Mutex type for global locks in the scheduler
+typedef __TBB_SCHEDULER_MUTEX_TYPE scheduler_mutex_type;
+
 #if __TBB_TASK_GROUP_CONTEXT
 //! Task group state change propagation global epoch
 /** Together with generic_scheduler::my_context_state_propagation_epoch forms
@@ -131,7 +138,8 @@ extern uintptr_t the_context_state_propagation_epoch;
 
 //! Mutex guarding state change propagation across task groups forest.
 /** Also protects modification of related data structures. **/
-extern spin_mutex the_context_state_propagation_mutex;
+typedef scheduler_mutex_type context_state_propagation_mutex_type;
+extern context_state_propagation_mutex_type the_context_state_propagation_mutex;
 #endif /* __TBB_TASK_GROUP_CONTEXT */
 
 //! Alignment for a task object
@@ -181,7 +189,7 @@ enum free_task_hint {
 
 #if TBB_USE_ASSERT
 
-static const uintptr_t venom = tbb::internal::size_t_select(0xDEADBEEFU,0xDDEEAADDDEADBEEFULL);
+static const uintptr_t venom = tbb::internal::select_size_t_constant<0xDEADBEEFU,0xDDEEAADDDEADBEEFULL>::value;
 
 template <typename T>
 void poison_value ( T& val ) { val = * punned_cast<T*>(&venom); }
@@ -195,7 +203,11 @@ inline void assert_task_valid( const task& task ) {
     __TBB_ASSERT( &task!=NULL, NULL );
     __TBB_ASSERT( !is_poisoned(&task), NULL );
     __TBB_ASSERT( (uintptr_t)&task % task_alignment == 0, "misaligned task" );
+#if __TBB_RECYCLE_TO_ENQUEUE
+    __TBB_ASSERT( (unsigned)task.state()<=(unsigned)task::to_enqueue, "corrupt task (invalid state)" );
+#else
     __TBB_ASSERT( (unsigned)task.state()<=(unsigned)task::recycle, "corrupt task (invalid state)" );
+#endif
 }
 
 #else /* !TBB_USE_ASSERT */
@@ -258,6 +270,7 @@ inline bool ConcurrentWaitsEnabled ( task& t ) { return false; }
 // arena_slot
 //------------------------------------------------------------------------
 struct arena_slot_line1 {
+    //TODO: make this tbb:atomic<>.
     //! Scheduler of the thread attached to the slot
     /** Marks the slot as busy, and is used to iterate through the schedulers belonging to this arena **/
     generic_scheduler* my_scheduler;
@@ -307,7 +320,7 @@ struct arena_slot : padded<arena_slot_line1>, padded<arena_slot_line2> {
     void allocate_task_pool( size_t n ) {
         size_t byte_size = ((n * sizeof(task*) + NFS_MaxLineSize - 1) / NFS_MaxLineSize) * NFS_MaxLineSize;
         my_task_pool_size = byte_size / sizeof(task*);
-        task_pool_ptr = (task**)NFS_Allocate( byte_size, 1, NULL );
+        task_pool_ptr = (task**)NFS_Allocate( 1, byte_size, NULL );
         // No need to clear the fresh deque since valid items are designated by the head and tail members.
         // But fill it with a canary pattern in the high vigilance debug mode.
         fill_with_canary_pattern( 0, my_task_pool_size );

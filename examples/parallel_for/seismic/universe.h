@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -46,7 +46,7 @@ private:
     //as the compiler is forced to place class members of the same clause in order of the
     //declaration this seems to be the right way of padding.
 
-    //magic constants what are being added bellow are chosen experimentally.
+    //magic constants added below are chosen experimentally.
     enum {
         MaxWidth = UniverseWidth+1,
         MaxHeight = UniverseHeight+3

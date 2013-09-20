@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -76,7 +76,7 @@ __TBB_SYMBOL( _ZN3tbb10interface610task_arena18internal_terminateEv )
 __TBB_SYMBOL( _ZNK3tbb10interface610task_arena13internal_waitEv )
 __TBB_SYMBOL( _ZNK3tbb10interface610task_arena16internal_enqueueERNS_4taskEi )
 __TBB_SYMBOL( _ZNK3tbb10interface610task_arena16internal_executeERNS0_8internal13delegate_baseE )
-__TBB_SYMBOL( _ZNK3tbb10interface610task_arena19internal_initializeEi )
+__TBB_SYMBOL( _ZN3tbb10interface610task_arena19internal_initializeEv )
 __TBB_SYMBOL( _ZN3tbb10interface610task_arena12current_slotEv )
 #endif /* __TBB_TASK_ARENA */
 
@@ -161,8 +161,10 @@ __TBB_SYMBOL( _ZN3tbb21set_assertion_handlerEPFvPKciS1_S1_E )
 __TBB_SYMBOL( _ZN3tbb8internal36get_initial_auto_partitioner_divisorEv )
 __TBB_SYMBOL( _ZN3tbb8internal13handle_perrorEiPKc )
 __TBB_SYMBOL( _ZN3tbb8internal15runtime_warningEPKcz )
+#if __TBB_x86_32
 __TBB_SYMBOL( __TBB_machine_store8_slow_perf_warning )
 __TBB_SYMBOL( __TBB_machine_store8_slow )
+#endif
 __TBB_SYMBOL( TBB_runtime_interface_version )
 
 /* tbb_main.cpp */

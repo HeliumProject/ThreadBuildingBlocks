@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -69,7 +69,8 @@ LINK_TBB.LIB = $(TBB.LIB)
 
 MALLOC.DLL = libtbbmalloc$(DEBUG_SUFFIX).$(DLL)
 MALLOC.LIB = $(MALLOC.DLL)
+LINK_MALLOC.LIB = $(MALLOC.LIB)
 
 TBB_NOSTRICT=1
 
-TEST_LAUNCHER=sh $(tbb_root)/build/test_launcher.sh
+TEST_LAUNCHER=sh $(tbb_root)/build/test_launcher.sh $(largs)

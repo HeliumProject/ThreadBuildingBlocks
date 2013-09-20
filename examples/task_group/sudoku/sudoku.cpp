@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -26,23 +26,23 @@
     the GNU General Public License.
 */
 
-#if __TBB_MIC
+#if __TBB_MIC_OFFLOAD
 #pragma offload_attribute (push,target(mic))
-#endif // __TBB_MIC
+#endif // __TBB_MIC_OFFLOAD
+
+// This header should come before any other one.
+// For details, see Known Issues in the Release Notes.
+#include "tbb/tbb_stddef.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
 #include "tbb/atomic.h"
 #include "tbb/tick_count.h"
 #include "tbb/task_scheduler_init.h"
 #include "tbb/task_group.h"
 
-#if __INTEL_COMPILER
-// Suppress "std::auto_prt<> is deprecated" warning
-// TODO: replace auto_ptr with unique_ptr for compilers supporting C++11
-#pragma warning(disable: 1478)
-#endif
 #include "../../common/utility/utility.h"
 
 #pragma warning(disable: 4996)
@@ -279,15 +279,15 @@ unsigned solve(int p) {
     return nSols;
 }
 
-#if __TBB_MIC
+#if __TBB_MIC_OFFLOAD
 #pragma offload_attribute (pop)
-#endif // __TBB_MIC
+#endif // __TBB_MIC_OFFLOAD
 
 int do_get_default_num_threads() {
     int threads;
-    #if __TBB_MIC
+    #if __TBB_MIC_OFFLOAD
     #pragma offload target(mic) out(threads)
-    #endif // __TBB_MIC
+    #endif // __TBB_MIC_OFFLOAD
     threads = tbb::task_scheduler_init::default_num_threads();
     return threads;
 }
@@ -307,7 +307,7 @@ int main(int argc, char *argv[]) {
 
         utility::parse_cli_arguments(argc,argv,
             utility::cli_argument_pack()
-            //"-h" option for for displaying help is present implicitly
+            //"-h" option for displaying help is present implicitly
             .positional_arg(threads,"n-of-threads",utility::thread_number_range_desc)
             .positional_arg(filename,"filename","input filename")
 
@@ -323,14 +323,14 @@ int main(int argc, char *argv[]) {
         // otherwise (if file name not specified), the default statically initialized board will be used.
         for(int p = threads.first; p <= threads.last; p = threads.step(p) ) {
             unsigned number;
-            #if __TBB_MIC
+            #if __TBB_MIC_OFFLOAD
             #pragma offload target(mic) in(init_values, p, verbose, find_one) out(number, solve_time)
             {
-            #endif // __TBB_MIC
+            #endif // __TBB_MIC_OFFLOAD
             number = solve(p);
-            #if __TBB_MIC
+            #if __TBB_MIC_OFFLOAD
             }
-            #endif // __TBB_MIC
+            #endif // __TBB_MIC_OFFLOAD
 
             if ( !silent ) {
                 if ( find_one ) {

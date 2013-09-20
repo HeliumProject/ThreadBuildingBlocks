@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
-<title>tbb::zero_allocator&lt; T, Allocator &gt; Class Template Reference</title>
+<title>tbb::thread_bound_filter Class Reference</title>
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 <link href="tabs.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -21,70 +21,100 @@
     <li><a href="functions.html"><span>Class&nbsp;Members</span></a></li>
   </ul></div>
 <div class="nav">
-<a class="el" href="a00423.html">tbb</a>::<a class="el" href="a00361.html">zero_allocator</a></div>
-<h1>tbb::zero_allocator&lt; T, Allocator &gt; Class Template Reference<br>
+<a class="el" href="a00428.html">tbb</a>::<a class="el" href="a00361.html">thread_bound_filter</a></div>
+<h1>tbb::thread_bound_filter Class Reference<br>
 <small>
-[<a class="el" href="a00438.html">Memory Allocation</a>]</small>
-</h1><!-- doxytag: class="tbb::zero_allocator" -->Meets "allocator" requirements of ISO C++ Standard, Section 20.1.5.  
+[<a class="el" href="a00441.html">Algorithms</a>]</small>
+</h1><!-- doxytag: class="tbb::thread_bound_filter" --><!-- doxytag: inherits="tbb::filter" -->A stage in a pipeline served by a user thread.  
 <a href="#_details">More...</a>
 <p>
-<code>#include &lt;<a class="el" href="a00650.html">tbb_allocator.h</a>&gt;</code>
+<code>#include &lt;pipeline.h&gt;</code>
 <p>
-<a href="a00150.html">List of all members.</a><table border="0" cellpadding="0" cellspacing="0">
+<p>Inheritance diagram for tbb::thread_bound_filter:
+<p><center><img src="a00361.png" usemap="#tbb::thread_bound_filter_map" border="0" alt=""></center>
+<map name="tbb::thread_bound_filter_map">
+<area href="a00294.html" alt="tbb::filter" shape="rect" coords="0,0,145,24">
+</map>
+<a href="a00108.html">List of all members.</a><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Public Types</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="77c87446a645cc3dbeba6fc82cc7eec0"></a><!-- doxytag: member="tbb::zero_allocator::base_allocator_type" ref="77c87446a645cc3dbeba6fc82cc7eec0" args="" -->
-typedef Allocator&lt; T &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><b>base_allocator_type</b></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="902c4645e624e8f589b89841df5331de0c135a0274225f59d2b2a682d1103f23"></a><!-- doxytag: member="tbb::thread_bound_filter::success" ref="902c4645e624e8f589b89841df5331de0c135a0274225f59d2b2a682d1103f23" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>success</b></td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="2eb3bf02103f455e0614e0a392388428"></a><!-- doxytag: member="tbb::zero_allocator::value_type" ref="2eb3bf02103f455e0614e0a392388428" args="" -->
-typedef base_allocator_type::value_type&nbsp;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="902c4645e624e8f589b89841df5331de5243cf0030982cfa4ac1a8e97acb39f4"></a><!-- doxytag: member="tbb::thread_bound_filter::item_not_available" ref="902c4645e624e8f589b89841df5331de5243cf0030982cfa4ac1a8e97acb39f4" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>item_not_available</b></td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="54d0a81317a90278dc492d44cc7dcdfc"></a><!-- doxytag: member="tbb::zero_allocator::pointer" ref="54d0a81317a90278dc492d44cc7dcdfc" args="" -->
-typedef base_allocator_type::pointer&nbsp;</td><td class="memItemRight" valign="bottom"><b>pointer</b></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="902c4645e624e8f589b89841df5331ded4085a8b251604b51c0f19602eeef09f"></a><!-- doxytag: member="tbb::thread_bound_filter::end_of_stream" ref="902c4645e624e8f589b89841df5331ded4085a8b251604b51c0f19602eeef09f" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>end_of_stream</b></td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="50536b451124814064b0e8ff7b6cea21"></a><!-- doxytag: member="tbb::zero_allocator::const_pointer" ref="50536b451124814064b0e8ff7b6cea21" args="" -->
-typedef base_allocator_type::const_pointer&nbsp;</td><td class="memItemRight" valign="bottom"><b>const_pointer</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="2ef488ecc55bf4a619f68b021d5b93e2"></a><!-- doxytag: member="tbb::zero_allocator::reference" ref="2ef488ecc55bf4a619f68b021d5b93e2" args="" -->
-typedef base_allocator_type::reference&nbsp;</td><td class="memItemRight" valign="bottom"><b>reference</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="31f0de5db53e4c219e8548078572e1ff"></a><!-- doxytag: member="tbb::zero_allocator::const_reference" ref="31f0de5db53e4c219e8548078572e1ff" args="" -->
-typedef base_allocator_type::const_reference&nbsp;</td><td class="memItemRight" valign="bottom"><b>const_reference</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="55acbfec8d7fd904c9b2040816522084"></a><!-- doxytag: member="tbb::zero_allocator::size_type" ref="55acbfec8d7fd904c9b2040816522084" args="" -->
-typedef base_allocator_type::size_type&nbsp;</td><td class="memItemRight" valign="bottom"><b>size_type</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="c54d45a74bd3b48ff8db174c266ddede"></a><!-- doxytag: member="tbb::zero_allocator::difference_type" ref="c54d45a74bd3b48ff8db174c266ddede" args="" -->
-typedef base_allocator_type::difference_type&nbsp;</td><td class="memItemRight" valign="bottom"><b>difference_type</b></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><b>result_type</b> { <b>success</b>, 
+<b>item_not_available</b>, 
+<b>end_of_stream</b>
+ }</td></tr>
 
 <tr><td colspan="2"><br><h2>Public Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="8c48c0436e3239be8f07c53c7f6658e4"></a><!-- doxytag: member="tbb::zero_allocator::zero_allocator" ref="8c48c0436e3239be8f07c53c7f6658e4" args="(const zero_allocator &amp;a)" -->
-&nbsp;</td><td class="memItemRight" valign="bottom"><b>zero_allocator</b> (const <a class="el" href="a00361.html">zero_allocator</a> &amp;a)  throw ()</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">result_type __TBB_EXPORTED_METHOD&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00361.html#c4f90f2c771bce748beb9be734fa286c">try_process_item</a> ()</td></tr>
 
-<tr><td class="memTemplParams" nowrap colspan="2"><a class="anchor" name="67685c1cfcd3b5f81ac8f3c8dd1375b9"></a><!-- doxytag: member="tbb::zero_allocator::zero_allocator" ref="67685c1cfcd3b5f81ac8f3c8dd1375b9" args="(const zero_allocator&lt; U &gt; &amp;a)" -->
-template&lt;typename U&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memTemplItemRight" valign="bottom"><b>zero_allocator</b> (const <a class="el" href="a00361.html">zero_allocator</a>&lt; U &gt; &amp;a)  throw ()</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">If a data item is available, invoke operator() on that item.  <a href="#c4f90f2c771bce748beb9be734fa286c"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">result_type __TBB_EXPORTED_METHOD&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00361.html#5e726bdc7fbd924c0b07bd558b1d4d5d">process_item</a> ()</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="b6e7eb50d9faeca418d56a9758357377"></a><!-- doxytag: member="tbb::zero_allocator::allocate" ref="b6e7eb50d9faeca418d56a9758357377" args="(const size_type n, const void *hint=0)" -->
-pointer&nbsp;</td><td class="memItemRight" valign="bottom"><b>allocate</b> (const size_type n, const void *hint=0)</td></tr>
-
-<tr><td colspan="2"><br><h2>Classes</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><b>rebind</b></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Wait until a data item becomes available, and invoke operator() on that item.  <a href="#5e726bdc7fbd924c0b07bd558b1d4d5d"></a><br></td></tr>
+<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="413fad2ade743d9af5dcabc56aedf4fe"></a><!-- doxytag: member="tbb::thread_bound_filter::thread_bound_filter" ref="413fad2ade743d9af5dcabc56aedf4fe" args="(mode filter_mode)" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>thread_bound_filter</b> (mode filter_mode)</td></tr>
 
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
-<h3>template&lt;typename T, template&lt; typename X &gt; class Allocator = tbb_allocator&gt;<br>
- class tbb::zero_allocator&lt; T, Allocator &gt;</h3>
+A stage in a pipeline served by a user thread. 
+<p>
+<hr><h2>Member Function Documentation</h2>
+<a class="anchor" name="5e726bdc7fbd924c0b07bd558b1d4d5d"></a><!-- doxytag: member="tbb::thread_bound_filter::process_item" ref="5e726bdc7fbd924c0b07bd558b1d4d5d" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">result_type __TBB_EXPORTED_METHOD tbb::thread_bound_filter::process_item           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td width="100%"></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
 
-Meets "allocator" requirements of ISO C++ Standard, Section 20.1.5. 
 <p>
-The class is an adapter over an actual allocator that fills the allocation using memset function with template argument C as the value. The members are ordered the same way they are in section 20.4.1 of the ISO C++ standard. 
+Wait until a data item becomes available, and invoke operator() on that item. 
 <p>
+This interface is blocking. Returns 'success' if an item was processed. Returns 'end_of_stream' if there are no more items to process. Never returns 'item_not_available', as it blocks until another return condition applies. 
+</div>
+</div><p>
+<a class="anchor" name="c4f90f2c771bce748beb9be734fa286c"></a><!-- doxytag: member="tbb::thread_bound_filter::try_process_item" ref="c4f90f2c771bce748beb9be734fa286c" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">result_type __TBB_EXPORTED_METHOD tbb::thread_bound_filter::try_process_item           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td width="100%"></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+If a data item is available, invoke operator() on that item. 
+<p>
+This interface is non-blocking. Returns 'success' if an item was processed. Returns 'item_not_available' if no item can be processed now but more may arrive in the future, or if token limit is reached. Returns 'end_of_stream' if there are no more items to process. 
+</div>
+</div><p>
 <hr>The documentation for this class was generated from the following file:<ul>
-<li><a class="el" href="a00650.html">tbb_allocator.h</a></ul>
+<li>pipeline.h</ul>
 <hr>
 <p></p>
-Copyright &copy; 2005-2012 Intel Corporation.  All Rights Reserved.
+Copyright &copy; 2005-2013 Intel Corporation.  All Rights Reserved.
 <p></p>
 Intel, Pentium, Intel Xeon, Itanium, Intel XScale and VTune are
 registered trademarks or trademarks of Intel Corporation or its

@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -510,8 +510,6 @@ typedef tbb::movable_exception<int> SolitaryMovableException;
 typedef tbb::movable_exception<ExceptionData> MultipleMovableException;
 
 class LeafTaskWithMovableExceptions : public TaskBase {
-    bool m_IntAsData;
-
     tbb::task* do_execute () {
         Harness::ConcurrencyTracker ct;
         WaitUntilConcurrencyPeaks();

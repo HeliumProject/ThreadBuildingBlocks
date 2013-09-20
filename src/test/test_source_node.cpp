@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -26,9 +26,9 @@
     the GNU General Public License.
 */
 
-#include "harness_graph.h"
+#include "harness.h"
+#include "tbb/flow_graph.h"
 #include "tbb/task.h"
-
 #include "tbb/task_scheduler_init.h"
 
 const int N = 1000;

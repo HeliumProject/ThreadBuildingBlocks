@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -46,7 +46,7 @@ else
 	MS_CRT_KEY = /MD$(if $(findstring debug,$(cfg)),d)
 endif
 EH_FLAGS = /EHsc /GR
-              
+
 ifeq ($(cfg), release)
         CPLUS_FLAGS = $(MS_CRT_KEY) /O2 /Zi $(EH_FLAGS) /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=$(TBB.LIB)
         ASM_FLAGS =
@@ -57,8 +57,11 @@ ifeq ($(cfg), debug)
 endif
 
 ifeq ($(target_ui), win8ui)
-        CPLUS_FLAGS += /D__TBB_DYNAMIC_LOAD_ENABLED=0 /D "_UNICODE" /D "UNICODE" /D "WINAPI_FAMILY=WINAPI_FAMILY_APP"
+        CPLUS_FLAGS += /D "_UNICODE" /D "UNICODE"  /D "WINAPI_FAMILY=WINAPI_FAMILY_APP"
         _WIN32_WINNT=0x0602
+ifeq ($(target_ui_mode), production)
+        LIB_LINK_FLAGS += /APPCONTAINER
+endif
 else
         CPLUS_FLAGS += /DDO_ITT_NOTIFY
 endif
@@ -90,9 +93,16 @@ ifeq ($(runtime),vc8)
         CPLUS_FLAGS += /D_USE_RTM_VERSION
 endif
 
+# Since VS2012, VC++ provides /volatile option to control semantics of volatile variables.
+# We want to use strict ISO semantics in the library and tests
+ifeq (ok,$(call detect_js,/minversion cl 17))
+        CPLUS_FLAGS += /volatile:iso
+endif
+
 CPLUS_FLAGS += /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE \
         /D_WIN32_WINNT=$(_WIN32_WINNT)
 C_FLAGS = $(CPLUS_FLAGS)
+
 #------------------------------------------------------------------------------
 # End of setting compiler flags.
 #------------------------------------------------------------------------------
@@ -105,12 +115,17 @@ ASSEMBLY_SOURCE=$(arch)-masm
 ifeq (intel64,$(arch))
     ASM=ml64 /nologo
     ASM_FLAGS += /DEM64T=1 /c /Zi
-    TBB_ASM.OBJ = atomic_support.obj intel64_misc.obj
+    TBB_ASM.OBJ = atomic_support.obj intel64_misc.obj itsx.obj
     MALLOC_ASM.OBJ = atomic_support.obj
+else
+ifeq (armv7,$(arch))
+    ASM=
+    TBB_ASM.OBJ= 
 else
     ASM=ml /nologo
     ASM_FLAGS += /c /coff /Zi /safeseh
-    TBB_ASM.OBJ = atomic_support.obj lock_byte.obj
+    TBB_ASM.OBJ = atomic_support.obj lock_byte.obj itsx.obj
+endif
 endif
 #------------------------------------------------------------------------------
 # End of setting assembler data.
@@ -120,7 +135,11 @@ endif
 #------------------------------------------------------------------------------
 # Setting tbbmalloc data.
 #------------------------------------------------------------------------------
+ifneq ($(target_ui), win8ui)
 M_CPLUS_FLAGS = $(subst $(EH_FLAGS),/EHs-,$(CPLUS_FLAGS))
+else
+M_CPLUS_FLAGS = $(CPLUS_FLAGS)
+endif
 #------------------------------------------------------------------------------
 # End of setting tbbmalloc data.
 #------------------------------------------------------------------------------
@@ -128,4 +147,3 @@ M_CPLUS_FLAGS = $(subst $(EH_FLAGS),/EHs-,$(CPLUS_FLAGS))
 #------------------------------------------------------------------------------
 # End of define compiler-specific variables.
 #------------------------------------------------------------------------------
-

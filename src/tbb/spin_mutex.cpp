@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -45,7 +45,7 @@ void spin_mutex::scoped_lock::internal_release() {
     __TBB_ASSERT( my_mutex, "release on spin_mutex::scoped_lock that is not holding a lock" );
 
     ITT_NOTIFY(sync_releasing, my_mutex);
-    __TBB_UnlockByte(my_mutex->flag, 0);
+    __TBB_UnlockByte(my_mutex->flag);
     my_mutex = NULL;
 }
 

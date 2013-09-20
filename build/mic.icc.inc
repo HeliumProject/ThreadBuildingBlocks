@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -63,8 +63,6 @@ CILK_AVAILABLE = yes
 TBB_ASM.OBJ=
 MALLOC_ASM.OBJ=
 
-CPLUS_FLAGS += -strict-ansi
-
 ifneq (00,$(lambdas)$(cpp0x))
     CPLUS_FLAGS += $(CPP11_FLAGS)
 endif
@@ -72,7 +70,7 @@ endif
 CPLUS_FLAGS += -DHARNESS_INCOMPLETE_SOURCES=1 -D__TBB_MIC_NATIVE -DTBB_USE_EXCEPTIONS=0 -opt-streaming-stores never
 CPLUS += -mmic
 CONLY += -mmic
-LINK_FLAGS = -Wl,-rpath-link=.
+LINK_FLAGS = -Wl,-rpath-link=. -rdynamic
 # Tell the icc to not link against libcilk*. Otherwise icc tries to link and emits a warning message.
 LIB_LINK_LIBS += -no-intel-extensions
 # Do not depend on libirc etc dynamic libs. It makes 'native' execution easier for the users.

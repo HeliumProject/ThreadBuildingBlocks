@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -48,7 +48,7 @@ typedef signed char depth_t;
 //! Class for getting access to drawing memory
 class drawing_memory
 {
-#ifdef __TBB_MIC
+#ifdef __TBB_MIC_OFFLOAD
     // The address is kept as uintptr_t since
     // the compiler could not offload a pointer
 #endif
@@ -176,7 +176,7 @@ inline color_t video::get_color(colorcomp_t red, colorcomp_t green, colorcomp_t 
         register depth_t bs = blue_shift, rs = red_shift;
         if(blue_shift < 0) blue >>= -bs, bs = 0;
         else /*red_shift < 0*/ red >>= -rs, rs = 0;
-        return (red<<rs)&red_mask | (green<<green_shift)&green_mask | (blue<<bs)&blue_mask;
+        return ((red<<rs)&red_mask) | ((green<<green_shift)&green_mask) | ((blue<<bs)&blue_mask);
     } else { // UYVY colorspace
         register unsigned y, u, v;
         y = red * 77 + green * 150 + blue * 29; // sum(77+150+29=256) * max(=255):  limit->2^16

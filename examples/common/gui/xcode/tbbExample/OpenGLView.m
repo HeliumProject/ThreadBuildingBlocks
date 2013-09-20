@@ -1,48 +1,42 @@
 /*
- Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
- 
- The source code contained or described herein and all documents related
- to the source code ("Material") are owned by Intel Corporation or its
- suppliers or licensors.  Title to the Material remains with Intel
- Corporation or its suppliers and licensors.  The Material is protected
- by worldwide copyright laws and treaty provisions.  No part of the
- Material may be used, copied, reproduced, modified, published, uploaded,
- posted, transmitted, distributed, or disclosed in any way without
- Intel's prior express written permission.
- 
- No license under any patent, copyright, trade secret or other
- intellectual property right is granted to or conferred upon you by
- disclosure or delivery of the Materials, either expressly, by
- implication, inducement, estoppel or otherwise.  Any license under such
- intellectual property rights must be express and approved by Intel in
- writing.
- */
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
+
+    This file is part of Threading Building Blocks.
+
+    Threading Building Blocks is free software; you can redistribute it
+    and/or modify it under the terms of the GNU General Public License
+    version 2 as published by the Free Software Foundation.
+
+    Threading Building Blocks is distributed in the hope that it will be
+    useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Threading Building Blocks; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+    As a special exception, you may use this file as part of a free software
+    library without restriction.  Specifically, if other files instantiate
+    templates or use macros or inline functions from this file, or you compile
+    this file and link it with other files to produce an executable, this
+    file does not by itself cause the resulting executable to be covered by
+    the GNU General Public License.  This exception does not however
+    invalidate any other reasons why the executable file might be covered by
+    the GNU General Public License.
+*/
 
 #import "OpenGLView.h"
 #import <OpenGL/gl.h>
 #import "tbbAppDelegate.h"
 
-int x,y;
-void on_mouse_func(int x, int y, int k);
-void on_key_func(int x);
-void* windows_ptr=0;
-
-//defined in cpp-file
+// defined in macvideo.cpp
 extern char* window_title;
 extern int cocoa_update;
 extern int g_sizex, g_sizey;
 extern unsigned int *g_pImg;
-
-void draw(void)
-{
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBegin(GL_POINT);
-    glDrawPixels(g_sizex, g_sizey, GL_BGRA_EXT, GL_UNSIGNED_INT_8_8_8_8_REV, g_pImg);
-    glEnd();
-    glFlush();
-}
+void on_mouse_func(int x, int y, int k);
+void on_key_func(int x);
 
 @implementation OpenGLView
 
@@ -50,36 +44,32 @@ void draw(void)
 
 - (void) drawRect:(NSRect)start
 {
-    x=g_sizex;
-    y=g_sizey;
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    draw();
+    glWindowPos2i(0, (int)self.visibleRect.size.height);
+    glPixelZoom( (float)self.visibleRect.size.width /(float)g_sizex,
+                -(float)self.visibleRect.size.height/(float)g_sizey);
+    glDrawPixels(g_sizex, g_sizey, GL_BGRA_EXT, GL_UNSIGNED_INT_8_8_8_8_REV, g_pImg);
     glFlush();
+
     timer = [NSTimer scheduledTimerWithTimeInterval:0.03 target:self selector:@selector(update_window) userInfo:nil repeats:YES];
 }
 
 -(void) update_window{
-    if( cocoa_update ) draw();
-    if( window_title )[_window setTitle:[NSString stringWithFormat:@"%s", window_title]];
-    return;
+    if( cocoa_update ) [self setNeedsDisplay:YES]; // TODO also clear cocoa_update?
+    if( window_title ) [_window setTitle:[NSString stringWithFormat:@"%s", window_title]];
 }
 
 -(void) keyDown:(NSEvent *)theEvent{
     on_key_func([theEvent.characters characterAtIndex:0]);
-    return;
 }
 
 -(void) mouseDown:(NSEvent *)theEvent{
     // mouse event for seismic and fractal
     NSPoint point= theEvent.locationInWindow;
-    x = point.x;
-    y = point.y;
+    const int x = (int)point.x;
+    const int y = (int)point.y;
     NSRect rect = self.visibleRect;
-    on_mouse_func(x*g_sizex/rect.size.width,y*g_sizey/rect.size.height,1);
-    draw();
-    return;
-    
+    on_mouse_func(x*g_sizex/(int)rect.size.width,((int)rect.size.height-y)*g_sizey/(int)rect.size.height,1);
+    [self setNeedsDisplay:YES];
 }
 
 - (BOOL) acceptsFirstResponder
@@ -95,12 +85,9 @@ void draw(void)
 -(void) viewDidEndLiveResize
 {
     NSRect rect = self.visibleRect;
-    x=rect.size.width;
-    y=rect.size.height;
-    glPixelZoom((float)x/(float)g_sizex, (float)y/(float)g_sizey);
+    const int x=(int)rect.size.width;
+    const int y=(int)rect.size.height;
     [_window setTitle:[NSString stringWithFormat:@"X=%d Y=%d", x,y]];
-    draw();
-    return;
 }
 
 @end

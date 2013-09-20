@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -35,17 +35,17 @@ ifneq (,$(shell which icc 2>/dev/null))
 CXX=icc
 endif # which icc
 
-ifeq ($(offload), mic)
-override CXXFLAGS += -D__TBB_MIC=1
-endif
-
-ifeq (,$(filter icc icpc,$(CXX)))
 TBBLIB = -ltbb
 TBBLIB_DEBUG = -ltbb_debug
-else
-TBBLIB = -tbb
-TBBLIB_DEBUG = -tbb
+
+ifneq (,$(filter icc icpc,$(CXX)))
 CXX0XFLAGS?=-std=c++0x -D_TBB_CPP0X
+ifeq ($(offload), mic)
+override CXXFLAGS += -D__TBB_MIC_OFFLOAD=1
+# Replace -ltbb with -tbb in the offload mode
+TBBLIB = -tbb
+TBBLIB_DEBUG += -offload-option,mic,ld,"-ltbb_debug"
+endif
 endif
 
 ifeq ($(shell uname), Linux)

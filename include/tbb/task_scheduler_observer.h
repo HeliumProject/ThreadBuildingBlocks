@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -148,7 +148,7 @@ public:
     //! Destructor additionally protects concurrent on_scheduler_leaving notification
     // It is recommended to disable observation before destructor of a derived class starts,
     // otherwise it can lead to concurrent notification callback on partly destroyed object
-    virtual ~task_scheduler_observer() { if(my_proxy) observe(false);}
+    virtual ~task_scheduler_observer() { if(my_proxy) observe(false); }
 };
 
 } //namespace interface6

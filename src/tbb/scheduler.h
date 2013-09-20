@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -30,6 +30,7 @@
 #define _TBB_scheduler_H
 
 #include "scheduler_common.h"
+#include "tbb/spin_mutex.h"
 #include "mailbox.h"
 #include "tbb_misc.h" // for FastRandom
 #include "itt_notify.h"
@@ -119,7 +120,9 @@ class generic_scheduler: public scheduler, public ::rml::job, private scheduler_
     friend class arena;
 #if __TBB_TASK_ARENA
     friend class interface6::task_arena;
+    friend class interface6::delegated_task;
     friend class interface6::wait_task;
+    friend struct interface6::wait_body;
 #endif //__TBB_TASK_ARENA
     friend class allocate_root_proxy;
     friend class governor;
@@ -149,6 +152,7 @@ class generic_scheduler: public scheduler, public ::rml::job, private scheduler_
 
     static const size_t null_arena_index = ~size_t(0);
 
+    // TODO: Rename into is_task_pool_published()
     inline bool in_arena () const;
 
     inline bool is_local_task_pool_quiescent () const;
@@ -165,11 +169,15 @@ class generic_scheduler: public scheduler, public ::rml::job, private scheduler_
 
     //! Hint provided for operations with the container of starvation-resistant tasks.
     /** Modified by the owner thread (during these operations). **/
-    unsigned hint_for_push;
+    unsigned hint_for_push; //TODO: Replace by my_random?
 
     //! Free list of small tasks that can be reused.
     task* my_free_list;
 
+#if __TBB_HOARD_NONLOCAL_TASKS
+    //! Free list of small non-local tasks that should be returned or can be reused.
+    task* my_nonlocal_free_list;
+#endif
     //! Fake root task created by slave threads.
     /** The task is used as the "parent" argument to method wait_for_all. */
     task* my_dummy_task;
@@ -196,6 +204,7 @@ class generic_scheduler: public scheduler, public ::rml::job, private scheduler_
     //! Returns true if stealing is allowed
     bool can_steal () {
         int anchor;
+        // TODO IDEA: Add performance warning?
 #if __TBB_ipf
         return my_stealing_threshold < (uintptr_t)&anchor && (uintptr_t)__TBB_get_bsp() < my_rsb_stealing_threshold;
 #else
@@ -309,6 +318,11 @@ protected:
 #endif /* TBB_USE_ASSERT <= 1 */
 
 public:
+#if __TBB_TASK_ARENA
+    template<typename Body>
+    void nested_arena_execute(arena*, task*, bool, Body&);
+#endif
+
     /*override*/ 
     void spawn( task& first, task*& next );
 
@@ -347,11 +361,14 @@ public:
         dispatch loop (one of wait_for_all methods) invoked directly from that thread. **/
     inline bool master_outermost_level () const;
 
+    //! True if the scheduler is on the outermost dispatch level in a worker thread.
+    inline bool worker_outermost_level () const;
+
 #if __TBB_TASK_GROUP_CONTEXT
     //! Returns task group context used by this scheduler instance.
     /** This context is associated with root tasks created by a master thread 
         without explicitly specified context object outside of any running task.
-        
+
         Note that the default context of a worker thread is never accessed by
         user code (directly or indirectly). **/
     inline task_group_context* default_context ();
@@ -389,6 +406,7 @@ public:
     context_list_node_t my_context_list_head;
 
     //! Mutex protecting access to the list of task group contexts.
+    // TODO: check whether it can be deadly preempted and replace by spinning/sleeping mutex
     spin_mutex my_context_list_mutex;
 
     //! Last state propagation epoch known to this thread 
@@ -407,9 +425,6 @@ public:
     tbb::atomic<uintptr_t> my_local_ctx_list_update;
 
 #if __TBB_TASK_PRIORITY
-    //! True if the scheduler is on the outermost dispatch level in a worker thread.
-    inline bool worker_outermost_level () const;
-
     //! Returns reference priority used to decide whether a task should be offloaded.
     inline intptr_t effective_reference_priority () const;
 
@@ -418,6 +433,7 @@ public:
         take into account global top priority (among all arenas in the market). **/
     volatile intptr_t *my_ref_top_priority;
 
+    // TODO: move into slots and fix is_out_of_work
     //! Task pool for offloading tasks with priorities lower than the current top priority.
     task* my_offloaded_tasks;
 
@@ -454,7 +470,7 @@ public:
     //! Finds all contexts registered by this scheduler affected by the state change
     //! and propagates the new state to them.
     template <typename T>
-    void propagate_task_group_state ( T task_group_context::*mptr_state, T new_state );
+    void propagate_task_group_state ( T task_group_context::*mptr_state, task_group_context& src, T new_state );
 #endif /* __TBB_TASK_GROUP_CONTEXT */
 
 #if _WIN32||_WIN64
@@ -504,11 +520,14 @@ namespace tbb {
 namespace internal {
 
 inline bool generic_scheduler::in_arena () const {
+    __TBB_ASSERT(my_arena_slot, 0);
     return my_arena_slot->task_pool != EmptyTaskPool;
 }
 
 inline bool generic_scheduler::is_local_task_pool_quiescent () const {
-    return my_arena_slot->task_pool == EmptyTaskPool || my_arena_slot->task_pool == LockedTaskPool;
+    __TBB_ASSERT(my_arena_slot, 0);
+    task** tp = my_arena_slot->task_pool;
+    return tp == EmptyTaskPool || tp == LockedTaskPool;
 }
 
 inline bool generic_scheduler::is_quiescent_local_task_pool_empty () const {
@@ -523,6 +542,10 @@ inline bool generic_scheduler::is_quiescent_local_task_pool_reset () const {
 
 inline bool generic_scheduler::master_outermost_level () const {
     return my_dispatching_task == my_dummy_task;
+}
+
+inline bool generic_scheduler::worker_outermost_level () const {
+    return !my_dispatching_task;
 }
 
 #if __TBB_TASK_GROUP_CONTEXT
@@ -593,8 +616,14 @@ void generic_scheduler::commit_relocated_tasks ( size_t new_tail ) {
     release_task_pool();
 }
 
-template<free_task_hint h>
+template<free_task_hint hint>
 void generic_scheduler::free_task( task& t ) {
+#if __TBB_HOARD_NONLOCAL_TASKS
+    // TODO: remove the whole free_task_hint stuff when enabled permanently
+    static const free_task_hint h = no_hint;
+#else
+    static const free_task_hint h = hint;
+#endif
     GATHER_STATISTIC(--my_counters.active_tasks);
     task_prefix& p = t.prefix();
     // Verify that optimization hints are correct.
@@ -609,8 +638,17 @@ void generic_scheduler::free_task( task& t ) {
         GATHER_STATISTIC(++my_counters.free_list_length);
         p.next = my_free_list;
         my_free_list = &t;
+    } else if( p.origin && uintptr_t(p.origin) < uintptr_t(4096) ) {
+        // a special value reserved for future use, do nothing since
+        // origin is not pointing to a scheduler instance
     } else if( !(h&local_task) && p.origin ) {
+        GATHER_STATISTIC(++my_counters.free_list_length);
+#if __TBB_HOARD_NONLOCAL_TASKS
+        p.next = my_nonlocal_free_list;
+        my_nonlocal_free_list = &t;
+#else
         free_nonlocal_small_task(t);
+#endif
     } else {
         GATHER_STATISTIC(--my_counters.big_tasks);
         deallocate_task(t);
@@ -618,10 +656,6 @@ void generic_scheduler::free_task( task& t ) {
 }
 
 #if __TBB_TASK_PRIORITY
-inline bool generic_scheduler::worker_outermost_level () const {
-    return !my_dispatching_task;
-}
-
 inline intptr_t generic_scheduler::effective_reference_priority () const {
     // Workers on the outermost dispatch level (i.e. with empty stack) use market's
     // priority as a reference point (to speedup discovering process level priority

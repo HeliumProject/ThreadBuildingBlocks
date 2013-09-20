@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -32,25 +32,89 @@
 
 #define TBB_PREVIEW_TASK_ARENA 1
 
+#if !TBB_USE_EXCEPTIONS && _MSC_VER
+    // Suppress "C++ exception handler used, but unwind semantics are not enabled" warning in STL headers
+    #pragma warning (push)
+    #pragma warning (disable: 4530)
+#endif
+
+#include <stdexcept>
+
+#if !TBB_USE_EXCEPTIONS && _MSC_VER
+    #pragma warning (pop)
+#endif
+
+#include <cstdlib>
+#include <cstdio>
+
 #include "tbb/task_arena.h"
 #include "tbb/task_scheduler_observer.h"
 #include "tbb/task_scheduler_init.h"
-#include <cstdlib>
-#include "harness_assert.h"
-
-#include <cstdio>
-
-#include "harness.h"
-#include "harness_barrier.h"
-#include "harness_concurrency_tracker.h"
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
 #include "tbb/enumerable_thread_specific.h"
+
+#include "harness_assert.h"
+#include "harness.h"
+#include "harness_barrier.h"
+#include "harness_concurrency_tracker.h"
 
 #if _MSC_VER
 // plays around __TBB_NO_IMPLICIT_LINKAGE. __TBB_LIB_NAME should be defined (in makefiles)
     #pragma comment(lib, __TBB_STRING(__TBB_LIB_NAME))
 #endif
+
+//! Test that task_arena::initialize and task_arena::terminate work when doing nothing else.
+/** maxthread is treated as the biggest possible concurrency level. */
+void InitializeAndTerminate( int maxthread ) {
+    __TBB_TRY {
+        for( int i=0; i<200; ++i ) {
+            switch( i&3 ) {
+                // Arena is created inactive, initialization is always explicit. Lazy initialization is covered by other test functions.
+                // Explicit initialization can either keep the original values or change those.
+                // Arena termination can be explicit or implicit (in the destructor).
+                // TODO: extend with concurrency level checks if such a method is added.
+                // TODO: test for different master slot reservation values (perhaps in another function)
+                default: {
+                    tbb::task_arena arena( std::rand() % maxthread + 1 );
+                    ASSERT(!arena.is_active(), "arena should not be active until initialized");
+                    arena.initialize();
+                    ASSERT(arena.is_active(), NULL);
+                    arena.terminate();
+                    ASSERT(!arena.is_active(), "arena should not be active; it was terminated");
+                    break;
+                }
+                case 0: {   
+                    tbb::task_arena arena( 1 );
+                    ASSERT(!arena.is_active(), "arena should not be active until initialized");
+                    arena.initialize( std::rand() % maxthread + 1 ); // change the parameters
+                    ASSERT(arena.is_active(), NULL);
+                    break;
+                }
+                case 1: {
+                    tbb::task_arena arena( tbb::task_arena::automatic );
+                    ASSERT(!arena.is_active(), NULL);
+                    arena.initialize();
+                    ASSERT(arena.is_active(), NULL);
+                    break;
+                }
+                case 2: {
+                    tbb::task_arena arena;
+                    ASSERT(!arena.is_active(), "arena should not be active until initialized");
+                    arena.initialize( std::rand() % maxthread + 1 );
+                    ASSERT(arena.is_active(), NULL);
+                    arena.terminate();
+                    ASSERT(!arena.is_active(), "arena should not be active; it was terminated");
+                    break;
+                }
+            }
+        }
+    } __TBB_CATCH( std::runtime_error& error ) {
+#if TBB_USE_EXCEPTIONS
+        REPORT("ERROR: %s\n", error.what() );
+#endif /* TBB_USE_EXCEPTIONS */
+    }
+}
 
 typedef tbb::blocked_range<int> Range;
 
@@ -90,7 +154,6 @@ class ArenaObserver : public tbb::task_scheduler_observer {
     /*override*/
     void on_scheduler_exit( bool is_worker ) {
         REMARK("a %s #%p is leaving arena %d to %d\n", is_worker?"worker":"master", &local_id.local(), myId, old_id.local());
-        //ASSERT(old_id.local(), "call to on_scheduler_exit without prior entry");
         ASSERT(local_id.local() == myId, "nesting of arenas is broken");
         ASSERT(slot_id.local() == tbb::task_arena::current_slot(), NULL);
         slot_id.local() = -1;
@@ -104,10 +167,10 @@ class ArenaObserver : public tbb::task_scheduler_observer {
     }
 public:
     ArenaObserver(tbb::task_arena &a, int id, int trap = 0) : tbb::task_scheduler_observer(a) {
-        observe(true);
         ASSERT(id, NULL);
         myId = id;
         myTrappedSlot = trap;
+        observe(true);
     }
     ~ArenaObserver () {
         ASSERT(!old_id.local(), "inconsistent observer state");
@@ -129,9 +192,10 @@ struct AsynchronousWork : NoAssign {
 
 void TestConcurrentArenas(int p) {
     //Harness::ConcurrencyTracker::Reset();
-    tbb::task_arena a1(1);
+    tbb::task_arena a1;
+    a1.initialize(1,0);
     ArenaObserver o1(a1, p*2+1);
-    tbb::task_arena a2(2);
+    tbb::task_arena a2(2,1);
     ArenaObserver o2(a2, p*2+2);
     Harness::SpinBarrier barrier(2);
     AsynchronousWork work(barrier);
@@ -144,31 +208,96 @@ void TestConcurrentArenas(int p) {
 }
 
 class MultipleMastersBody : NoAssign {
+    int mode;
     tbb::task_arena &my_a;
     Harness::SpinBarrier &my_b;
 public:
-    MultipleMastersBody(tbb::task_arena &a, Harness::SpinBarrier &b)
-    : my_a(a), my_b(b) {}
+    MultipleMastersBody(int m, tbb::task_arena &a, Harness::SpinBarrier &b)
+    : mode(m), my_a(a), my_b(b) {}
     void operator()(int) const {
         my_a.execute(AsynchronousWork(my_b, /*blocking=*/false));
-        my_a.wait_until_empty();
+        if( mode == 0 ) {
+            my_a.wait_until_empty();
+            // A regression test for bugs 1954 & 1971
+            my_a.enqueue(AsynchronousWork(my_b, /*blocking=*/false));
+        }
     }
 };
 
+class MultipleMastersPart3 : NoAssign {
+    tbb::task_arena &my_a;
+    Harness::SpinBarrier &my_b;
+
+    struct Runner : NoAssign {
+        tbb::task* const a_task;
+        Runner(tbb::task* const t) : a_task(t) {}
+        void operator()() const {
+            for ( volatile int i = 0; i < 10000; ++i )
+                ;
+            a_task->decrement_ref_count();
+        }
+    };
+
+    struct Waiter : NoAssign {
+        tbb::task* const a_task;
+        Waiter(tbb::task* const t) : a_task(t) {}
+        void operator()() const {
+            a_task->wait_for_all();
+        }
+    };
+
+public:
+    MultipleMastersPart3(tbb::task_arena &a, Harness::SpinBarrier &b)
+        : my_a(a), my_b(b) {}
+    void operator()(int idx) const {
+        tbb::empty_task* root_task = new(tbb::task::allocate_root()) tbb::empty_task;
+        for( int i=0; i<100; ++i) {
+            root_task->set_ref_count(2);
+            my_a.enqueue(Runner(root_task));
+            my_a.execute(Waiter(root_task));
+        }
+        tbb::task::destroy(*root_task);
+        REMARK("Master #%d: job completed, wait for others\n", idx);
+        my_b.timed_wait(10);
+    }
+};
+
+
 void TestMultipleMasters(int p) {
-    REMARK("multiple masters\n");
-    tbb::task_arena a(1);
-    ArenaObserver o(a, 1);
-    Harness::SpinBarrier barrier(p+1);
-    NativeParallelFor( p, MultipleMastersBody(a, barrier) );
-    a.wait_until_empty();
-    barrier.timed_wait(10);
+    {
+        REMARK("multiple masters, part 1\n");
+        tbb::task_arena a(1,0);
+        a.initialize();
+        ArenaObserver o(a, 1);
+        Harness::SpinBarrier barrier(2*p+1); // each of p threads will submit two tasks signaling the barrier
+        NativeParallelFor( p, MultipleMastersBody(0, a, barrier) );
+        barrier.timed_wait(10);
+        a.wait_until_empty();
+    } {
+        REMARK("multiple masters, part 2\n");
+        tbb::task_arena a(2,1);
+        ArenaObserver o(a, 2);
+        Harness::SpinBarrier barrier(p+2);
+        a.enqueue(AsynchronousWork(barrier, /*blocking=*/true)); // occupy the worker, a regression test for bug 1981
+        NativeParallelFor( p, MultipleMastersBody(1, a, barrier) );
+        barrier.timed_wait(10);
+        a.wait_until_empty();
+    } {
+        // Regression test for the bug 1981 part 2 (task_arena::execute() with wait_for_all for an enqueued task)
+        REMARK("multiple masters, part 3: wait_for_all() in execute()\n");
+        tbb::task_arena a(p,1);
+        Harness::SpinBarrier barrier(p+1); // for masters to avoid endless waiting at least in some runs
+        // "Oversubscribe" the arena by 1 master thread
+        NativeParallelFor( p+1, MultipleMastersPart3(a, barrier) );
+        a.wait_until_empty();
+    }
 }
 
 
 int TestMain () {
     // TODO: a workaround for temporary p-1 issue in market
     tbb::task_scheduler_init init_market_p_plus_one(MaxThread+1);
+    InitializeAndTerminate(MaxThread);
     for( int p=MinThread; p<=MaxThread; ++p ) {
         REMARK("testing with %d threads\n", p );
         NativeParallelFor( p, &TestConcurrentArenas );

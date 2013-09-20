@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
-<title>tbb::flow::interface6::receiver&lt; T &gt; Class Template Reference</title>
+<title>tbb::queuing_rw_mutex Class Reference</title>
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 <link href="tabs.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -21,91 +21,54 @@
     <li><a href="functions.html"><span>Class&nbsp;Members</span></a></li>
   </ul></div>
 <div class="nav">
-<a class="el" href="a00423.html">tbb</a>::<b>flow</b>::<b>interface6</b>::<a class="el" href="a00328.html">receiver</a></div>
-<h1>tbb::flow::interface6::receiver&lt; T &gt; Class Template Reference</h1><!-- doxytag: class="tbb::flow::interface6::receiver" -->Pure virtual template class that defines a receiver of messages of type T.  
+<a class="el" href="a00428.html">tbb</a>::<a class="el" href="a00328.html">queuing_rw_mutex</a></div>
+<h1>tbb::queuing_rw_mutex Class Reference<br>
+<small>
+[<a class="el" href="a00444.html">Synchronization</a>]</small>
+</h1><!-- doxytag: class="tbb::queuing_rw_mutex" -->Queuing reader-writer mutex with local-only spinning.  
 <a href="#_details">More...</a>
 <p>
-<code>#include &lt;<a class="el" href="a00521.html">flow_graph.h</a>&gt;</code>
+<code>#include &lt;queuing_rw_mutex.h&gt;</code>
 <p>
-<p>Inheritance diagram for tbb::flow::interface6::receiver&lt; T &gt;:
-<p><center><img src="a00328.png" usemap="#tbb::flow::interface6::receiver< T >_map" border="0" alt=""></center>
-<map name="tbb::flow::interface6::receiver< T >_map">
-<area href="a00269.html" alt="tbb::flow::interface6::broadcast_node< T >" shape="rect" coords="0,56,352,80">
-<area href="a00270.html" alt="tbb::flow::interface6::buffer_node< T, A >" shape="rect" coords="362,56,714,80">
-<area href="a00286.html" alt="tbb::flow::interface6::continue_receiver" shape="rect" coords="724,56,1076,80">
-<area href="a00299.html" alt="tbb::flow::interface6::limiter_node< T >" shape="rect" coords="1086,56,1438,80">
-<area href="a00319.html" alt="tbb::flow::interface6::priority_queue_node< T, Compare, A >" shape="rect" coords="181,112,533,136">
-<area href="a00320.html" alt="tbb::flow::interface6::queue_node< T, A >" shape="rect" coords="543,112,895,136">
-<area href="a00335.html" alt="tbb::flow::interface6::sequencer_node< T, A >" shape="rect" coords="543,168,895,192">
-</map>
-<a href="a00054.html">List of all members.</a><table border="0" cellpadding="0" cellspacing="0">
+<a href="a00114.html">List of all members.</a><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
-<tr><td colspan="2"><br><h2>Public Types</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="0d0524c99313dedea1e04464bbf2f7ef"></a><!-- doxytag: member="tbb::flow::interface6::receiver::input_type" ref="0d0524c99313dedea1e04464bbf2f7ef" args="" -->
-typedef T&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#0d0524c99313dedea1e04464bbf2f7ef">input_type</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The input type of this receiver. <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="7fa8cff811e7c1589b805a4bb4c7a74f"></a><!-- doxytag: member="tbb::flow::interface6::receiver::predecessor_type" ref="7fa8cff811e7c1589b805a4bb4c7a74f" args="" -->
-typedef <a class="el" href="a00334.html">sender</a>&lt; T &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#7fa8cff811e7c1589b805a4bb4c7a74f">predecessor_type</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The predecessor type for this node. <br></td></tr>
 <tr><td colspan="2"><br><h2>Public Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="b00699b235435f7b65b663d5063624a1"></a><!-- doxytag: member="tbb::flow::interface6::receiver::~receiver" ref="b00699b235435f7b65b663d5063624a1" args="()" -->
-virtual&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#b00699b235435f7b65b663d5063624a1">~receiver</a> ()</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="85c90877c3447690ac4e2ac4ff8dea5e"></a><!-- doxytag: member="tbb::queuing_rw_mutex::queuing_rw_mutex" ref="85c90877c3447690ac4e2ac4ff8dea5e" args="()" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#85c90877c3447690ac4e2ac4ff8dea5e">queuing_rw_mutex</a> ()</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Destructor. <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="e1adb4060a7cbac837cd24da57c5a846"></a><!-- doxytag: member="tbb::flow::interface6::receiver::try_put" ref="e1adb4060a7cbac837cd24da57c5a846" args="(const T &amp;t)" -->
-bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#e1adb4060a7cbac837cd24da57c5a846">try_put</a> (const T &amp;t)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Construct unacquired mutex. <br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="1ba73e3d95cfdf8323880bc623af9099"></a><!-- doxytag: member="tbb::queuing_rw_mutex::~queuing_rw_mutex" ref="1ba73e3d95cfdf8323880bc623af9099" args="()" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#1ba73e3d95cfdf8323880bc623af9099">~queuing_rw_mutex</a> ()</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Put an item to the receiver. <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="30e3316466efe3a713c23062b6e806f3"></a><!-- doxytag: member="tbb::flow::interface6::receiver::register_predecessor" ref="30e3316466efe3a713c23062b6e806f3" args="(predecessor_type &amp;)" -->
-virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#30e3316466efe3a713c23062b6e806f3">register_predecessor</a> (<a class="el" href="a00334.html">predecessor_type</a> &amp;)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Destructor asserts if the mutex is acquired, i.e. q_tail is non-NULL. <br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="eb88522d145ad7bcf5bebfa7d2a6122b"></a><!-- doxytag: member="tbb::queuing_rw_mutex::internal_construct" ref="eb88522d145ad7bcf5bebfa7d2a6122b" args="()" -->
+void __TBB_EXPORTED_METHOD&nbsp;</td><td class="memItemRight" valign="bottom"><b>internal_construct</b> ()</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add a predecessor to the node. <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="3bc76547b51d3c9b633e3987d22dce95"></a><!-- doxytag: member="tbb::flow::interface6::receiver::remove_predecessor" ref="3bc76547b51d3c9b633e3987d22dce95" args="(predecessor_type &amp;)" -->
-virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#3bc76547b51d3c9b633e3987d22dce95">remove_predecessor</a> (<a class="el" href="a00334.html">predecessor_type</a> &amp;)</td></tr>
+<tr><td colspan="2"><br><h2>Static Public Attributes</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="0dc1e28d3033e8f9556f5b13b7b57d0f"></a><!-- doxytag: member="tbb::queuing_rw_mutex::is_rw_mutex" ref="0dc1e28d3033e8f9556f5b13b7b57d0f" args="" -->
+static const bool&nbsp;</td><td class="memItemRight" valign="bottom"><b>is_rw_mutex</b> = true</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Remove a predecessor from the node. <br></td></tr>
-<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="28e9ec451c4b915033fded40126797eb"></a><!-- doxytag: member="tbb::flow::interface6::receiver::try_put_task" ref="28e9ec451c4b915033fded40126797eb" args="(const T &amp;t)=0" -->
-virtual <a class="el" href="a00344.html">task</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><b>try_put_task</b> (const T &amp;t)=0</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="e6ad08ef251f9ea898bd5f67963869c5"></a><!-- doxytag: member="tbb::queuing_rw_mutex::is_recursive_mutex" ref="e6ad08ef251f9ea898bd5f67963869c5" args="" -->
+static const bool&nbsp;</td><td class="memItemRight" valign="bottom"><b>is_recursive_mutex</b> = false</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="3cbe1d85d9ea0506925cbc1297596d20"></a><!-- doxytag: member="tbb::flow::interface6::receiver::reset_receiver" ref="3cbe1d85d9ea0506925cbc1297596d20" args="()=0" -->
-virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><b>reset_receiver</b> ()=0</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="147b34120505e419f6ea8d631ec4375d"></a><!-- doxytag: member="tbb::queuing_rw_mutex::is_fair_mutex" ref="147b34120505e419f6ea8d631ec4375d" args="" -->
+static const bool&nbsp;</td><td class="memItemRight" valign="bottom"><b>is_fair_mutex</b> = true</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="5ac37d666be3d45d60a8509569d1607a"></a><!-- doxytag: member="tbb::flow::interface6::receiver::is_continue_receiver" ref="5ac37d666be3d45d60a8509569d1607a" args="()" -->
-virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><b>is_continue_receiver</b> ()</td></tr>
+<tr><td colspan="2"><br><h2>Classes</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00329.html">scoped_lock</a></td></tr>
 
-<tr><td colspan="2"><br><h2>Friends</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="621bab40a858d214db69ef08d88b67c1"></a><!-- doxytag: member="tbb::flow::interface6::receiver::run_and_put_task" ref="621bab40a858d214db69ef08d88b67c1" args="" -->
-class&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#621bab40a858d214db69ef08d88b67c1">run_and_put_task</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">put item to successor; return task to run the successor if possible. <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="e4fa30d87bc0bfa80942f97a8d58f1bd"></a><!-- doxytag: member="tbb::flow::interface6::receiver::internal::broadcast_cache" ref="e4fa30d87bc0bfa80942f97a8d58f1bd" args="" -->
-class&nbsp;</td><td class="memItemRight" valign="bottom"><b>internal::broadcast_cache</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="31ba00ea3e3e5a421b38840bd0dc2589"></a><!-- doxytag: member="tbb::flow::interface6::receiver::internal::round_robin_cache" ref="31ba00ea3e3e5a421b38840bd0dc2589" args="" -->
-class&nbsp;</td><td class="memItemRight" valign="bottom"><b>internal::round_robin_cache</b></td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="3b6d13039c2a8c1e369e5790895b0088"></a><!-- doxytag: member="tbb::flow::interface6::receiver::limiter_node" ref="3b6d13039c2a8c1e369e5790895b0088" args="" -->
-class&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00328.html#3b6d13039c2a8c1e369e5790895b0088">limiter_node</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">put receiver back in initial state <br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="anchor" name="7e5acd3345f7903a0265a1ef9f3b66bc"></a><!-- doxytag: member="tbb::flow::interface6::receiver::internal::successor_cache" ref="7e5acd3345f7903a0265a1ef9f3b66bc" args="" -->
-class&nbsp;</td><td class="memItemRight" valign="bottom"><b>internal::successor_cache</b></td></tr>
-
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The scoped locking pattern.  <a href="a00329.html#_details">More...</a><br></td></tr>
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
-<h3>template&lt;typename T&gt;<br>
- class tbb::flow::interface6::receiver&lt; T &gt;</h3>
-
-Pure virtual template class that defines a receiver of messages of type T. 
+Queuing reader-writer mutex with local-only spinning. 
+<p>
+Adapted from Krieger, Stumm, et al. pseudocode at <a href="http://www.eecg.toronto.edu/parallel/pubs_abs.html#Krieger_etal_ICPP93">http://www.eecg.toronto.edu/parallel/pubs_abs.html#Krieger_etal_ICPP93</a> 
 <p>
 <hr>The documentation for this class was generated from the following file:<ul>
-<li><a class="el" href="a00521.html">flow_graph.h</a></ul>
+<li>queuing_rw_mutex.h</ul>
 <hr>
 <p></p>
-Copyright &copy; 2005-2012 Intel Corporation.  All Rights Reserved.
+Copyright &copy; 2005-2013 Intel Corporation.  All Rights Reserved.
 <p></p>
 Intel, Pentium, Intel Xeon, Itanium, Intel XScale and VTune are
 registered trademarks or trademarks of Intel Corporation or its

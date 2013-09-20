@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -44,7 +44,6 @@
     //MSVC in x64 mode does not accept inline assembler
     #define __TBB_X86_MSVC_INLINE_ASM_AVAILABLE 0
 #endif
-
 
 #define __TBB_NO_X86_MSVC_INLINE_ASM_MSG "The compiler being used is not supported (outdated?)"
 
@@ -167,12 +166,30 @@ struct __TBB_cpu_ctl_env_t {
     }
 #endif
 
+
+#if !__TBB_WIN8UI_SUPPORT
 extern "C" __declspec(dllimport) int __stdcall SwitchToThread( void );
 #define __TBB_Yield()  SwitchToThread()
+#else
+#include<thread>
+#define __TBB_Yield()  std::this_thread::yield()
+#endif
 
 #define __TBB_Pause(V) __TBB_machine_pause(V)
 #define __TBB_Log2(V)  __TBB_machine_lg(V)
 
 #undef __TBB_r
+
+extern "C" {
+    __int8 __TBB_EXPORTED_FUNC __TBB_machine_try_lock_elided (volatile void* ptr);
+    void   __TBB_EXPORTED_FUNC __TBB_machine_unlock_elided (volatile void* ptr);
+
+    // 'pause' instruction aborts HLE/RTM transactions
+#if __TBB_PAUSE_USE_INTRINSIC
+    inline static void __TBB_machine_try_lock_elided_cancel() { _mm_pause(); }
+#else
+    inline static void __TBB_machine_try_lock_elided_cancel() { _asm pause; }
+#endif
+}
 
 #endif /* __TBB_machine_msvc_ia32_common_H */

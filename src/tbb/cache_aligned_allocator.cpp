@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -42,7 +42,7 @@
 
 using namespace std;
 
-#if __TBB_WEAK_SYMBOLS
+#if __TBB_WEAK_SYMBOLS_PRESENT
 
 #pragma weak scalable_malloc
 #pragma weak scalable_free
@@ -56,7 +56,7 @@ extern "C" {
     void  scalable_aligned_free( void* );
 }
 
-#endif /* __TBB_WEAK_SYMBOLS */
+#endif /* __TBB_WEAK_SYMBOLS_PRESENT */
 
 namespace tbb {
 

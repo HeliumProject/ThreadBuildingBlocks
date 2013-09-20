@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -39,7 +39,9 @@ namespace internal {
 //! Amount of time to pause between steals.
 /** The default values below were found to be best empirically for K-Means
     on the 32-way Altix and 4-way (*2 for HT) fxqlin04. */
-#if __TBB_ipf
+#ifdef __TBB_STEALING_PAUSE
+static const long PauseTime = __TBB_STEALING_PAUSE;
+#elif __TBB_ipf
 static const long PauseTime = 1500;
 #else
 static const long PauseTime = 80;
@@ -111,6 +113,13 @@ class custom_scheduler: private generic_scheduler {
         p.extra_state &= ~es_ref_count_active;
 #endif /* TBB_USE_ASSERT */
 
+#if __TBB_RECYCLE_TO_ENQUEUE
+        if (p.state==task::to_enqueue) {
+            // related to __TBB_TASK_ARENA TODO: try keep priority of the task
+            // e.g. rework task_prefix to remember priority of received task and use here
+            my_arena->enqueue_task(s, 0, hint_for_push );
+        } else
+#endif /*__TBB_RECYCLE_TO_ENQUEUE*/
         if( bypass_slot==NULL )
             bypass_slot = &s;
         else
@@ -119,7 +128,7 @@ class custom_scheduler: private generic_scheduler {
 
 public:
     static generic_scheduler* allocate_scheduler( arena* a, size_t index ) {
-        scheduler_type* s = (scheduler_type*)NFS_Allocate(sizeof(scheduler_type),1,NULL);
+        scheduler_type* s = (scheduler_type*)NFS_Allocate(1,sizeof(scheduler_type),NULL);
         new( s ) scheduler_type( a, index );
         s->assert_task_pool_valid();
         ITT_SYNC_CREATE(s, SyncType_Scheduler, SyncObj_TaskPoolSpinning);
@@ -155,6 +164,7 @@ task* custom_scheduler<SchedulerTraits>::receive_or_steal_task( __TBB_atomic ref
         }
     }
 #endif /* __TBB_TASK_PRIORITY */
+    int yield_count = 0;
     // The state "failure_count==-1" is used only when itt_possible is true,
     // and denotes that a sync_prepare has not yet been issued.
     for( int failure_count = -static_cast<int>(SchedulerTraits::itt_possible);; ++failure_count) {
@@ -256,8 +266,13 @@ fail:
         }
         // Pause, even if we are going to yield, because the yield might return immediately.
         __TBB_Pause(PauseTime);
-        int yield_threshold = 2*int(n);
-        if( failure_count>=yield_threshold ) {
+        const int failure_threshold = 2*int(n);
+        if( failure_count>=failure_threshold ) {
+#if __TBB_YIELD2P
+            failure_count = 0;
+#else
+            failure_count = failure_threshold;
+#endif
             __TBB_Yield();
 #if __TBB_TASK_PRIORITY
             // Check if there are tasks abandoned by other workers
@@ -285,7 +300,8 @@ fail:
                 }
             }
 #endif /* __TBB_TASK_PRIORITY */
-            if( failure_count>=yield_threshold+100 ) {
+            const int yield_threshold = 100;
+            if( yield_count++ >= yield_threshold ) {
                 // When a worker thread has nothing to do, return it to RML.
                 // For purposes of affinity support, the thread is considered idle while in RML.
 #if __TBB_TASK_PRIORITY
@@ -315,7 +331,6 @@ fail:
                     }
                 }
 #endif /* __TBB_TASK_PRIORITY */
-                failure_count = yield_threshold;
             } // end of arena snapshot branch
         } // end of yielding branch
     } // end of nonlocal task retrieval loop
@@ -355,8 +370,8 @@ void custom_scheduler<SchedulerTraits>::local_wait_for_all( task& parent, task* 
     task* old_dispatching_task = my_dispatching_task;
     my_dispatching_task = my_innermost_running_task;
     if( master_outermost_level() ) {
-        // We are in the outermost task dispatch loop of a master thread,
-        __TBB_ASSERT( !is_worker(), NULL );
+        // We are in the outermost task dispatch loop of a master thread or a worker which mimics master
+        __TBB_ASSERT( !is_worker() || my_dispatching_task != old_dispatching_task, NULL );
         quit_point = &parent == my_dummy_task ? all_local_work_done : parents_work_done;
     } else {
         quit_point = parents_work_done;
@@ -466,6 +481,9 @@ void custom_scheduler<SchedulerTraits>::local_wait_for_all( task& parent, task* 
 
                     case task::recycle: // set by recycle_as_safe_continuation()
                         t->prefix().state = task::allocated;
+#if __TBB_RECYCLE_TO_ENQUEUE
+                    case task::to_enqueue: // set by recycle_to_enqueue()
+#endif
                         __TBB_ASSERT( t_next != t, "a task returned from method execute() can not be recycled in another way" );
                         reset_extra_state(t);
                         // for safe continuation, need atomically decrement ref_count;
@@ -520,6 +538,13 @@ void custom_scheduler<SchedulerTraits>::local_wait_for_all( task& parent, task* 
 #if __TBB_TASK_PRIORITY
 stealing_ground:
 #endif /* __TBB_TASK_PRIORITY */
+#if __TBB_HOARD_NONLOCAL_TASKS
+        // before stealing, previously stolen task objects are returned
+        for (; my_nonlocal_free_list; my_nonlocal_free_list = t ) {
+            t = my_nonlocal_free_list->prefix().next;
+            free_nonlocal_small_task( *my_nonlocal_free_list );
+        }
+#endif
         if ( quit_point == all_local_work_done ) {
             __TBB_ASSERT( !in_arena() && is_quiescent_local_task_pool_reset(), NULL );
             my_innermost_running_task = my_dispatching_task;
@@ -537,7 +562,7 @@ stealing_ground:
         // Dispatching task pointer is NULL *iff* this is a worker thread in its outermost
         // dispatch loop (i.e. its execution stack is empty). In this case it should exit it
         // either when there is no more work in the current arena, or when revoked by the market.
-        t = receive_or_steal_task( parent.prefix().ref_count, !my_dispatching_task );
+        t = receive_or_steal_task( parent.prefix().ref_count, worker_outermost_level() );
         if ( !t )
             goto done;
         __TBB_ASSERT(!is_proxy(*t),"unexpected proxy");
@@ -547,10 +572,14 @@ stealing_ground:
     } // end of try-block
     TbbCatchAll( t->prefix().context );
     // Complete post-processing ...
-    if( t->state() == task::recycle ) {
-        // ... for tasks recycled with recycle_as_safe_continuation
+    if( t->state() == task::recycle
+#if __TBB_RECYCLE_TO_ENQUEUE
+        // TODO: the enqueue semantics gets lost below, consider reimplementing
+        ||  t->state() == task::to_enqueue
+#endif
+      ) {
+        // ... for recycled tasks to atomically decrement ref_count
         t->prefix().state = task::allocated;
-        // for safe continuation, need to atomically decrement ref_count;
         if( SchedulerTraits::itt_possible )
             ITT_NOTIFY(sync_releasing, &t->prefix().ref_count);
         if( __TBB_FetchAndDecrementWrelease(&t->prefix().ref_count)==1 ) {
@@ -574,10 +603,10 @@ done:
         if ( parent.prefix().ref_count != parents_work_done ) {
             // This is a worker that was revoked by the market.
 #if __TBB_TASK_ARENA
-            __TBB_ASSERT( !my_dispatching_task,
+            __TBB_ASSERT( worker_outermost_level(),
                 "Worker thread exits nested dispatch loop prematurely" );
 #else
-            __TBB_ASSERT( is_worker() && !my_dispatching_task,
+            __TBB_ASSERT( is_worker() && worker_outermost_level(),
                 "Worker thread exits nested dispatch loop prematurely" );
 #endif
             return;

@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -51,12 +51,12 @@ endif
 
 
 # ICC 11.0 and higher support -std=c++0x
-ifeq (ok,$(shell cmd /C "cscript /nologo /E:jscript $(tbb_root)/build/detect.js /minversion icl 11"))
+ifeq (ok,$(call detect_js,/minversion icl 11))
     CPP11_FLAGS = /Qstd=c++0x /D_TBB_CPP0X
 endif
 
-# ICC 12.0 and higher provide Intel(R) Cilk Plus
-ifeq (ok,$(shell cmd /C "cscript /nologo /E:jscript $(tbb_root)/build/detect.js /minversion icl 12"))
+# ICC 12.0 and higher provide Intel(R) Cilk(TM) Plus
+ifeq (ok,$(call detect_js,/minversion icl 12))
     CILK_AVAILABLE = yes
 endif
 
@@ -135,6 +135,7 @@ ifeq ($(VCCOMPAT_FLAG),)
         $(error VC version not detected correctly: $(VCVERSION) )
 endif
 export VCCOMPAT_FLAG
+
 #------------------------------------------------------------------------------
 # End of setting compiler flags.
 #------------------------------------------------------------------------------
@@ -147,12 +148,12 @@ ASSEMBLY_SOURCE=$(arch)-masm
 ifeq (intel64,$(arch))
     ASM=ml64 /nologo
     ASM_FLAGS += /DEM64T=1 /c /Zi
-    TBB_ASM.OBJ = atomic_support.obj intel64_misc.obj
+    TBB_ASM.OBJ = atomic_support.obj intel64_misc.obj itsx.obj
     MALLOC_ASM.OBJ = atomic_support.obj
 else
     ASM=ml /nologo
     ASM_FLAGS += /c /coff /Zi /safeseh
-    TBB_ASM.OBJ = atomic_support.obj lock_byte.obj
+    TBB_ASM.OBJ = atomic_support.obj lock_byte.obj itsx.obj
 endif
 #------------------------------------------------------------------------------
 # End of setting assembler data.

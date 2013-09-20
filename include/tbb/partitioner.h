@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -403,7 +403,7 @@ public:
         return my_divisor > 1;
     }
     bool should_create_trap() {
-        return true; // TODO: rethink for the stage after memorizing level
+        return false;
     }
     static const unsigned range_pool_size = __TBB_RANGE_POOL_CAPACITY;
 };

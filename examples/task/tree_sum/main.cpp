@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -71,7 +71,7 @@ int main( int argc, const char *argv[] ) {
 
         utility::parse_cli_arguments(argc,argv,
             utility::cli_argument_pack()
-            //"-h" option for for displaying help is present implicitly
+            //"-h" option for displaying help is present implicitly
             .positional_arg(threads,"n-of-threads",utility::thread_number_range_desc)
             .positional_arg(number_of_nodes,"number-of-nodes","the number of nodes")
             .arg(silent,"silent","no output except elapsed time")

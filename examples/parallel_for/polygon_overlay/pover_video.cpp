@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -175,4 +175,9 @@ void pover_video::on_process() {
         if(gIsGraphicalVersion) rt_sleep(2000);
     }
     if(gIsGraphicalVersion) rt_sleep(8000);
+    delete gPolymap1;
+    delete gPolymap2;
+#if _DEBUG
+    delete gResultMap;
+#endif
 }

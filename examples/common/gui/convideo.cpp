@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -54,8 +54,9 @@ struct timeval g_time;
 #endif //_WIN32||_WIN64
 
 video::video()
-    : red_mask(0xff0000), red_shift(16), green_mask(0xff00),
-      green_shift(8), blue_mask(0xff), blue_shift(0), depth(24)
+    // OpenGL* RGBA byte order for little-endian CPU
+    : red_mask(0xff), red_shift(0), green_mask(0xff00),
+      green_shift(8), blue_mask(0xff0000), blue_shift(16), depth(24)
 {
     assert(g_video == 0);
     g_video = this; title = "Video"; updating = calc_fps = false;

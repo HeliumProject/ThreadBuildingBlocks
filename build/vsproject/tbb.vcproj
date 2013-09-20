@@ -15,7 +15,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MDd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="3" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MDd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="3" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -35,7 +35,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool" TargetEnvironment="3"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MDd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="3" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3" ShowIncludes="false"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MDd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="3" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3" ShowIncludes="false"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -55,7 +55,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MD /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="2" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MD /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="2" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -75,7 +75,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool" TargetEnvironment="3"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MD /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="2" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MD /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="2" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -95,7 +95,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MTd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="1" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MTd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="1" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -115,7 +115,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool" TargetEnvironment="3"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MTd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="1" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3" ShowIncludes="false"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MTd /Od /Ob0 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /DTBB_USE_DEBUG /D__TBB_LIB_NAME=tbb_debug.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" Optimization="0" AdditionalIncludeDirectories="." PreprocessorDefinitions="" MinimalRebuild="true" BasicRuntimeChecks="3" RuntimeLibrary="1" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3" ShowIncludes="false"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -135,7 +135,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MT /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="0" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MT /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="0" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -155,7 +155,7 @@
 			<Tool Name="VCXMLDataGeneratorTool"/>
 			<Tool Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool Name="VCMIDLTool" TargetEnvironment="3"/>
-			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MT /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="0" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
+			<Tool Name="VCCLCompilerTool" AdditionalOptions=" /c /MT /O2 /Zi /EHsc /GR /Zc:forScope /Zc:wchar_t /D__TBB_LIB_NAME=tbb.lib /DDO_ITT_NOTIFY /GS /DUSE_WINTHREAD /D_CRT_SECURE_NO_DEPRECATE /D_WIN32_WINNT=0x0501 /D__TBB_BUILD=1 /W4 /WX /I../../src /I../../src/rml/include /I../../include" AdditionalIncludeDirectories="." PreprocessorDefinitions="" RuntimeLibrary="0" BufferSecurityCheck="false" UsePrecompiledHeader="0" WarningLevel="4" DebugInformationFormat="3"/>
 			<Tool Name="VCManagedResourceCompilerTool"/>
 			<Tool Name="VCResourceCompilerTool"/>
 			<Tool Name="VCPreLinkEventTool"/>
@@ -175,44 +175,46 @@
 		<Filter Name="Source Files" Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx" UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File RelativePath="..\..\src\tbb\ia32-masm\atomic_support.asm">
 				<FileConfiguration Name="Debug|Win32">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
 				</FileConfiguration>
-				<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Release|x64" ExcludedFromBuild="true">
-					<Tool Name="MASM"/>
+				<FileConfiguration Name="Release|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
 				</FileConfiguration>
 				<FileConfiguration Name="Debug-MT|Win32">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release|x64" ExcludedFromBuild="true">
 				</FileConfiguration>
 				<FileConfiguration Name="Debug-MT|x64" ExcludedFromBuild="true">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
 				</FileConfiguration>
 				<FileConfiguration Name="Release-MT|x64" ExcludedFromBuild="true">
-					<Tool Name="MASM"/>
 				</FileConfiguration>
 			</File>
 			<File RelativePath="..\..\src\tbb\intel64-masm\atomic_support.asm">
 				<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
 				<FileConfiguration Name="Debug|x64">
 					<Tool Name="VCCustomBuildTool" Description="building atomic_support.obj" CommandLine="ml64 /Fo&quot;intel64\Debug\atomic_support.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/atomic_support.asm
 " Outputs="intel64\Debug\atomic_support.obj"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
 				<FileConfiguration Name="Release|x64">
 					<Tool Name="VCCustomBuildTool" Description="building atomic_support.obj" CommandLine="ml64 /Fo&quot;intel64\Release\atomic_support.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/atomic_support.asm
 " Outputs="intel64\Release\atomic_support.obj"/>
 				</FileConfiguration>
-				<FileConfiguration Name="Debug-MT|Win32" ExcludedFromBuild="true">
-				</FileConfiguration>
 				<FileConfiguration Name="Debug-MT|x64">
 					<Tool Name="VCCustomBuildTool" Description="building atomic_support.obj" CommandLine="ml64 /Fo&quot;intel64\Debug-MT\atomic_support.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/atomic_support.asm
 " Outputs="intel64\Debug-MT\atomic_support.obj"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Release-MT|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
 				<FileConfiguration Name="Release-MT|x64">
 					<Tool Name="VCCustomBuildTool" Description="building atomic_support.obj" CommandLine="ml64 /Fo&quot;intel64\Release-MT\atomic_support.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/atomic_support.asm
@@ -222,41 +224,95 @@
 			<File RelativePath="..\..\src\tbb\intel64-masm\intel64_misc.asm">
 				<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
 				<FileConfiguration Name="Debug|x64">
 					<Tool Name="VCCustomBuildTool" Description="building intel64_misc.obj" CommandLine="ml64 /Fo&quot;intel64\Debug\intel64_misc.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/intel64_misc.asm
 " Outputs="intel64\Debug\intel64_misc.obj"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
 				<FileConfiguration Name="Release|x64">
 					<Tool Name="VCCustomBuildTool" Description="building intel64_misc.obj" CommandLine="ml64 /Fo&quot;intel64\Release\intel64_misc.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/intel64_misc.asm
 " Outputs="intel64\Release\intel64_misc.obj"/>
 				</FileConfiguration>
-				<FileConfiguration Name="Debug-MT|Win32" ExcludedFromBuild="true">
-				</FileConfiguration>
 				<FileConfiguration Name="Debug-MT|x64">
 					<Tool Name="VCCustomBuildTool" Description="building intel64_misc.obj" CommandLine="ml64 /Fo&quot;intel64\Debug-MT\intel64_misc.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/intel64_misc.asm
 " Outputs="intel64\Debug-MT\intel64_misc.obj"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Release-MT|Win32" ExcludedFromBuild="true">
 				</FileConfiguration>
 				<FileConfiguration Name="Release-MT|x64">
 					<Tool Name="VCCustomBuildTool" Description="building intel64_misc.obj" CommandLine="ml64 /Fo&quot;intel64\Release-MT\intel64_misc.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/intel64_misc.asm
 " Outputs="intel64\Release-MT\intel64_misc.obj"/>
 				</FileConfiguration>
 			</File>
+            <File RelativePath="..\..\src\tbb\ia32-masm\itsx.asm">
+				<FileConfiguration Name="Debug|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|x64" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release|x64" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|x64" ExcludedFromBuild="true">
+				</FileConfiguration>
+			</File>
+            <File RelativePath="..\..\src\tbb\intel64-masm\itsx.asm">
+				<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32" ExcludedFromBuild="true">
+				</FileConfiguration>
+				<FileConfiguration Name="Debug|x64">
+					<Tool Name="VCCustomBuildTool" Description="building itsx.obj" CommandLine="ml64 /Fo&quot;intel64\Debug\itsx.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/itsx.asm
+" Outputs="intel64\Debug\itsx.obj"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release|x64">
+					<Tool Name="VCCustomBuildTool" Description="building itsx.obj" CommandLine="ml64 /Fo&quot;intel64\Release\itsx.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/itsx.asm
+" Outputs="intel64\Release\itsx.obj"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|x64">
+					<Tool Name="VCCustomBuildTool" Description="building itsx.obj" CommandLine="ml64 /Fo&quot;intel64\Debug-MT\itsx.obj&quot; /DUSE_FRAME_POINTER /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/itsx.asm
+" Outputs="intel64\Debug-MT\itsx.obj"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|x64">
+					<Tool Name="VCCustomBuildTool" Description="building itsx.obj" CommandLine="ml64 /Fo&quot;intel64\Release-MT\itsx.obj&quot;  /DEM64T=1 /c /Zi ../../src/tbb/intel64-masm/itsx.asm
+" Outputs="intel64\Release-MT\itsx.obj"/>
+				</FileConfiguration>
+			</File>
 			<File RelativePath="..\..\src\tbb\ia32-masm\lock_byte.asm">
 				<FileConfiguration Name="Debug|Win32">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Debug-MT|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff /Zi" UseSafeExceptionHandlers="true"/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release-MT|Win32">
+					<Tool Name="MASM" AdditionalOptions="/coff" UseSafeExceptionHandlers="true"/>
 				</FileConfiguration>
 				<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true">
 					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
 				</FileConfiguration>
 				<FileConfiguration Name="Release|x64" ExcludedFromBuild="true">
 					<Tool Name="MASM"/>
-				</FileConfiguration>
-				<FileConfiguration Name="Debug-MT|Win32">
-					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>
 				</FileConfiguration>
 				<FileConfiguration Name="Debug-MT|x64" ExcludedFromBuild="true">
 					<Tool Name="MASM" AdditionalOptions="/coff /Zi"/>

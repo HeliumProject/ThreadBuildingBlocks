@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -37,14 +37,29 @@
     #error mic_common.h should be included only when building for Intel(R) Many Integrated Core Architecture
 #endif
 
-/** Early Intel(R) MIC Architecture does not support mfence and pause instructions **/
-#define __TBB_full_memory_fence __TBB_release_consistency_helper
-#define __TBB_Pause(x) _mm_delay_32(x)
+#ifndef __TBB_PREFETCHING
+#define __TBB_PREFETCHING 1
+#endif
+#if __TBB_PREFETCHING
+#include <immintrin.h>
+#define __TBB_cl_prefetch(p) _mm_prefetch((const char*)p, _MM_HINT_T1)
+#define __TBB_cl_evict(p) _mm_clevict(p, _MM_HINT_T1)
+#endif
+
+/** Intel(R) Many Integrated Core Architecture does not support mfence and pause instructions **/
+#define __TBB_full_memory_fence() __asm__ __volatile__("lock; addl $0,(%%rsp)":::"memory")
+#define __TBB_Pause(x) _mm_delay_32(16*(x))
+#define __TBB_STEALING_PAUSE 1500/16
 #include <sched.h>
 #define __TBB_Yield() sched_yield()
 
 /** FPU control setting **/
 #define __TBB_CPU_CTL_ENV_PRESENT 0
+
+/** Specifics **/
+#define __TBB_STEALING_ABORT_ON_CONTENTION 1
+#define __TBB_YIELD2P 1
+#define __TBB_HOARD_NONLOCAL_TASKS 1
 
 #if ! ( __FreeBSD__ || __linux__ )
     #error Intel(R) Many Integrated Core Compiler does not define __FreeBSD__ or __linux__ anymore. Check for the __TBB_XXX_BROKEN defined under __FreeBSD__ or __linux__.

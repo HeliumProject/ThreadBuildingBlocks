@@ -1,4 +1,4 @@
-# Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+# Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 #
 # This file is part of Threading Building Blocks.
 #
@@ -110,13 +110,6 @@ else
         endif
     endif
     ifeq ($(tbb_os),macos)
-        # GUI for examples does not support 64-bit platforms
-        ifeq ($(arch),intel64)
-            export UI=con
-        endif
-        ifeq ($(arch),ppc64)
-            export UI=con
-        endif
         export DYLD_LIBRARY_PATH := $(DYLD_LIBRARY_PATH):$(work_dir)_release:$(work_dir)_debug
     else
         export LD_LIBRARY_PATH := $(LD_LIBRARY_PATH):$(work_dir)_release:$(work_dir)_debug
@@ -134,6 +127,7 @@ else
     export CPATH := $(CPATH):$(tbb_root)/include
 endif
 
+export CXXFLAGS
 COMMON_TARGETS := all clean release debug test perf_build perf_run
 # list of directories of examples
 EXAMPLES_DIRS := $(foreach T,$(EXAMPLES),$(dir $(T)))
@@ -149,8 +143,8 @@ $(COMMON_TARGETS):: % : $(addsuffix %,$(EXAMPLES_DIRS))
 
 # proxy rule for calling appropriate example
 $(EXAMPLES_TARGETS)::
-	@echo --------------------------------------------------
-	-$(MAKE) target="$(target)" SHELL=$(SHELL) -C $(@D)  -f $(EXAMPLE_MAKEFILE) $(notdir $@) CXX="$(CPLUS)" CXXFLAGS="$(CXXFLAGS)"
+	@echo ------------------------ $@ ------------------------
+	-$(MAKE) -C $(@D)  -f $(EXAMPLE_MAKEFILE) $(notdir $@) CXX="$(CPLUS)"
 
 printenv:
 ifeq ($(tbb_os),windows)

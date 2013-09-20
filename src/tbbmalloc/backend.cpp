@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -59,13 +59,45 @@ bool freeRawMemory (void *object, size_t size) {
     return UnmapMemory(object, size);
 }
 
-void ExtMemoryPool::reportHugePageStatus(bool available)
+void HugePagesStatus::registerAllocation(bool gotPage)
 {
+    if (gotPage) {
+        if (!wasObserved)
+            FencedStore(wasObserved, 1);
+    } else
+        FencedStore(enabled, 0);
     // reports huge page status only once
-    if (FencedLoad(needHugePageStatus)
-        && AtomicCompareExchange(needHugePageStatus, 0, 1))
-        fprintf(stderr, "TBBmalloc: scalable allocator\t%s\n",
-                available? "use huge pages" : "no huge pages" );
+    if (needActualStatusPrint
+        && AtomicCompareExchange(needActualStatusPrint, 0, 1))
+        doPrintStatus(gotPage, "available");
+}
+
+void HugePagesStatus::registerReleasing(size_t size)
+{
+    // We: 1) got huge page at least once,
+    // 2) something that looks like a huge page is been released,
+    // and 3) user requested huge pages,
+    // so a huge page might be available at next allocation.
+    // TODO: keep page status in regions and use exact check here
+    // Use isPowerOfTwoMultiple because it's faster then generic reminder.
+    if (FencedLoad(wasObserved) && isPowerOfTwoMultiple(size, pageSize))
+        FencedStore(enabled, requestedMode.get());
+}
+
+void HugePagesStatus::printStatus() {
+    doPrintStatus(requestedMode.get(), "requested");
+    if (requestedMode.get()) { // report actual status iff requested
+        if (pageSize)
+            FencedStore(needActualStatusPrint, 1);
+        else
+            doPrintStatus(/*state=*/false, "available");
+    }
+}
+
+void HugePagesStatus::doPrintStatus(bool state, const char *stateName)
+{
+    fprintf(stderr, "TBBmalloc: huge pages\t%s%s\n",
+            state? "" : "not ", stateName);
 }
 
 void *Backend::getRawMem(size_t &size) const
@@ -76,18 +108,15 @@ void *Backend::getRawMem(size_t &size) const
     }
     // try to get them at 1st allocation and still use, if successful
     // if 1st try is unsuccessful, no more trying
-    if (ExtMemoryPool::useHugePages) {
-        size_t hugeSize = alignUpGeneric(size, ExtMemoryPool::hugePageSize);
-        if (void *res = getRawMemory(hugeSize, /*hugePages=*/true)) {
+    if (FencedLoad(hugePages.enabled)) {
+        size_t hugeSize = alignUpGeneric(size, hugePages.getSize());
+        void *res = getRawMemory(hugeSize, /*hugePages=*/true);
+        hugePages.registerAllocation(res);
+        if (res) {
             size = hugeSize;
-            if (!ExtMemoryPool::seenHugePages)
-                ExtMemoryPool::seenHugePages = true;
-            ExtMemoryPool::reportHugePageStatus(/*available=*/true);
             return res;
         }
-        ExtMemoryPool::useHugePages = false;
     }
-    ExtMemoryPool::reportHugePageStatus(/*available=*/false);
     size_t granSize = alignUpGeneric(size, extMemPool->granularity);
     if (void *res = getRawMemory(granSize, /*hugePages=*/false)) {
         size = granSize;
@@ -101,13 +130,7 @@ void Backend::freeRawMem(void *object, size_t size) const
     if (extMemPool->userPool())
         (*extMemPool->rawFree)(extMemPool->poolId, object, size);
     else {
-        // We got huge page at least once and
-        // something that looks like a huge page is releasing,
-        // so a huge page might be available at next allocation.
-        // TODO: keep page status in regions and use exact check here
-        if (ExtMemoryPool::seenHugePages && !(size % ExtMemoryPool::hugePageSize)
-            && !ExtMemoryPool::useHugePages)
-            ExtMemoryPool::useHugePages = true;
+        hugePages.registerReleasing(size);
         freeRawMemory(object, size);
     }
 }
@@ -327,7 +350,7 @@ try_next:
             if (fBlock) {
                 // consume must be called before result of removing from a bin
                 // is visible externally.
-                sync->consume();
+                sync->blockConsumed();
                 if (alignedBin && needAlignedRes &&
                     Backend::sizeToBin(szBlock-size) == Backend::sizeToBin(szBlock)) {
                     // free remainder of fBlock stay in same bin,
@@ -370,21 +393,30 @@ void Backend::Bin::removeBlock(FreeBlock *fBlock)
         fBlock->next->prev = fBlock->prev;
 }
 
-void Backend::IndexedBins::addBlock(int binIdx, FreeBlock *fBlock, size_t blockSz)
+void Backend::IndexedBins::addBlock(int binIdx, FreeBlock *fBlock, size_t blockSz, bool addToTail)
 {
     Bin *b = &freeBins[binIdx];
 
     fBlock->myBin = binIdx;
     fBlock->aligned = toAlignedBin(fBlock, blockSz);
-    fBlock->prev = NULL;
+    fBlock->next = fBlock->prev = NULL;
     {
         MallocMutex::scoped_lock scopedLock(b->tLock);
-        fBlock->next = b->head;
-        b->head = fBlock;
-        if (fBlock->next)
-            fBlock->next->prev = fBlock;
-        if (!b->tail)
+        if (addToTail) {
+            fBlock->prev = b->tail;
             b->tail = fBlock;
+            if (fBlock->prev)
+                fBlock->prev->next = fBlock;
+            if (!b->head)
+                b->head = fBlock;
+        } else {
+            fBlock->next = b->head;
+            b->head = fBlock;
+            if (fBlock->next)
+                fBlock->next->prev = fBlock;
+            if (!b->tail)
+                b->tail = fBlock;
+        }
     }
     bitMask.set(binIdx, true);
 }
@@ -484,7 +516,7 @@ FreeBlock *Backend::getFromBin(int binIdx, int num, size_t size, bool needAligne
                 coalescAndPut(splitB, splitSz);
             }
         }
-        bkndSync.signal();
+        bkndSync.blockReleased();
         FreeBlock::markBlocks(fBlock, num, size);
     }
 
@@ -519,7 +551,7 @@ FreeBlock *Backend::getFromAlignedSpace(int binIdx, int num, size_t size,
             }
             coalescAndPut(newAlgnd, newSz);
         }
-        bkndSync.signal();
+        bkndSync.blockReleased();
         MALLOC_ASSERT(!needAlignedRes || isAligned(fBlock, slabSize), ASSERT_TEXT);
         FreeBlock::markBlocks(fBlock, num, size);
     }
@@ -528,15 +560,6 @@ FreeBlock *Backend::getFromAlignedSpace(int binIdx, int num, size_t size,
 
 void Backend::correctMaxRequestSize(size_t requestSize)
 {
-    // There were huge pages, but they are all consumed;
-    // switch back to maxBinned_SmallPage then.
-    size_t maxBinned = getMaxBinnedSize();
-    for (size_t oldMaxReq = maxRequestedSize; oldMaxReq > maxBinned; ) {
-        oldMaxReq = AtomicCompareExchange((intptr_t&)maxRequestedSize,
-                                           maxBinned, oldMaxReq);
-        maxBinned = getMaxBinnedSize();
-    }
-
     // Find maximal requested size limited by getMaxBinnedSize()
     if (requestSize < getMaxBinnedSize()) {
         for (size_t oldMaxReq = maxRequestedSize;
@@ -552,7 +575,7 @@ void Backend::correctMaxRequestSize(size_t requestSize)
 
 inline size_t Backend::getMaxBinnedSize()
 {
-    return ExtMemoryPool::useHugePages && !inUserPool()?
+    return hugePages.wasObserved && !inUserPool()?
         maxBinned_HugePage : maxBinned_SmallPage;
 }
 
@@ -565,7 +588,7 @@ bool Backend::askMemFromOS(size_t blockSize, intptr_t startModifiedCnt,
     // Another thread is modifying backend while we can't get the block.
     // Wait while it leaves and re-do the scan
     // before trying other ways to extend the backend.
-    if (bkndSync.waitTillSignalled(startModifiedCnt)
+    if (bkndSync.waitTillBlockReleased(startModifiedCnt)
         // semaphore is protecting adding more more memory from OS
         || memExtendingSema.wait())
         return true;
@@ -578,7 +601,7 @@ bool Backend::askMemFromOS(size_t blockSize, intptr_t startModifiedCnt,
     // So trying to balance between too small regions (that leads to
     // fragmentation) and too large ones (that leads to excessive address
     // space consumption). If region is "quite large", allocate only one,
-    // to prevent fragmentation. It supposely doesn't hurt perfromance,
+    // to prevent fragmentation. It supposedly doesn't hurt performance,
     // because the object requested by user is large.
     const size_t maxBinned = getMaxBinnedSize();
     const size_t regSz_sizeBased = blockSize>=maxBinned?
@@ -593,6 +616,9 @@ bool Backend::askMemFromOS(size_t blockSize, intptr_t startModifiedCnt,
                 maxBinSize = binSize;
         }
     } else {
+        // if huge pages enabled and blockSize>=maxBinned, rest of space up to
+        // huge page alignment is unusable, because single user object sits
+        // in an region.
         *largeBinsUpdated = true;
         maxBinSize = addNewRegion(regSz_sizeBased, /*exact=*/true);
     }
@@ -610,14 +636,15 @@ bool Backend::askMemFromOS(size_t blockSize, intptr_t startModifiedCnt,
         if (extMemPool->hardCachesCleanup())
             *largeBinsUpdated = true;
         else {
-            if (bkndSync.waitTillSignalled(startModifiedCnt))
+            // something can be in blocks that are in processing now
+            if (bkndSync.waitTillBlockReleased(startModifiedCnt))
                 return true;
             // OS can't give us more memory, but we have some in locked bins
             if (*lockedBinsThreshold && numOfLockedBins) {
                 *lockedBinsThreshold = 0;
                 return true;
             }
-            return false;
+            return false; // nothing found, give up
         }
     }
     return true;
@@ -729,18 +756,19 @@ void Backend::putBackRefSpace(void *b, size_t size, bool rawMemUsed)
 
 void Backend::removeBlockFromBin(FreeBlock *fBlock)
 {
-    if (fBlock->myBin != Backend::NO_BIN)
+    if (fBlock->myBin != Backend::NO_BIN) {
         if (fBlock->aligned)
             freeAlignedBins.lockRemoveBlock(fBlock->myBin, fBlock);
         else
             freeLargeBins.lockRemoveBlock(fBlock->myBin, fBlock);
+    }
 }
 
 void Backend::genericPutBlock(FreeBlock *fBlock, size_t blockSz)
 {
-    bkndSync.consume();
+    bkndSync.blockConsumed();
     coalescAndPut(fBlock, blockSz);
-    bkndSync.signal();
+    bkndSync.blockReleased();
 }
 
 void AllLargeBlocksList::add(LargeMemoryBlock *lmb)
@@ -764,25 +792,18 @@ void AllLargeBlocksList::remove(LargeMemoryBlock *lmb)
         lmb->gPrev->gNext = lmb->gNext;
 }
 
-void AllLargeBlocksList::removeAll(Backend *backend)
-{
-    LargeMemoryBlock *next, *lmb = loHead;
-    loHead = NULL;
-
-    for (; lmb; lmb = next) {
-        next = lmb->gNext;
-        // nothing left to AllLargeBlocksList::remove
-        lmb->gNext = lmb->gPrev = NULL;
-        removeBackRef(lmb->backRefIdx);
-        backend->putLargeBlock(lmb);
-    }
-}
-
 void Backend::putLargeBlock(LargeMemoryBlock *lmb)
 {
     if (extMemPool->mustBeAddedToGlobalLargeBlockList())
         extMemPool->lmbList.remove(lmb);
     genericPutBlock((FreeBlock *)lmb, lmb->unalignedSize);
+}
+
+void Backend::returnLargeObject(LargeMemoryBlock *lmb)
+{
+    removeBackRef(lmb->backRefIdx);
+    putLargeBlock(lmb);
+    STAT_increment(getThreadId(), ThreadCommonCounters, freeLargeObj);
 }
 
 void Backend::releaseRegion(MemRegion *memRegion)
@@ -886,7 +907,7 @@ FreeBlock *Backend::doCoalesc(FreeBlock *fBlock, MemRegion **mRegion)
     return resBlock;
 }
 
-void Backend::coalescAndPutList(FreeBlock *list, bool forceCoalescQDrop, bool doStat)
+void Backend::coalescAndPutList(FreeBlock *list, bool forceCoalescQDrop)
 {
     FreeBlock *helper;
     MemRegion *memRegion;
@@ -933,9 +954,10 @@ void Backend::coalescAndPutList(FreeBlock *list, bool forceCoalescQDrop, bool do
             // It's not a leak because the block later can be coalesced.
             if (currSz >= minBinnedSize) {
                 toRet->sizeTmp = currSz;
-                if (!(toAligned?
-                      freeAlignedBins.tryAddBlock(bin, toRet, addToTail) :
-                      freeLargeBins.tryAddBlock(bin, toRet, addToTail))) {
+                IndexedBins *target = toAligned? &freeAlignedBins : &freeLargeBins;
+                if (forceCoalescQDrop) {
+                    target->tryAddBlock(bin, toRet, addToTail);
+                } else if (!target->tryAddBlock(bin, toRet, addToTail)) {
                     coalescQ.putBlock(toRet);
                     continue;
                 }
@@ -959,7 +981,7 @@ void Backend::coalescAndPut(FreeBlock *fBlock, size_t blockSz)
     fBlock->sizeTmp = blockSz;
     fBlock->nextToFree = NULL;
 
-    coalescAndPutList(fBlock, /*forceCoalescQDrop=*/false, /*doStat=*/false);
+    coalescAndPutList(fBlock, /*forceCoalescQDrop=*/false);
 }
 
 bool Backend::scanCoalescQ(bool forceCoalescQDrop)
@@ -967,7 +989,7 @@ bool Backend::scanCoalescQ(bool forceCoalescQDrop)
     FreeBlock *currCoalescList = coalescQ.getAll();
 
     if (currCoalescList)
-        coalescAndPutList(currCoalescList, forceCoalescQDrop, /*doStat=*/true);
+        coalescAndPutList(currCoalescList, forceCoalescQDrop);
     return currCoalescList;
 }
 
@@ -1016,9 +1038,9 @@ void Backend::startUseBlock(MemRegion *region, FreeBlock *fBlock)
 
     unsigned targetBin = sizeToBin(blockSz);
     if (!region->exact && toAlignedBin(fBlock, blockSz)) {
-        freeAlignedBins.addBlock(targetBin, fBlock, blockSz);
+        freeAlignedBins.addBlock(targetBin, fBlock, blockSz, /*addToTail=*/false);
     } else {
-        freeLargeBins.addBlock(targetBin, fBlock, blockSz);
+        freeLargeBins.addBlock(targetBin, fBlock, blockSz, /*addToTail=*/false);
     }
 }
 
@@ -1065,7 +1087,7 @@ size_t Backend::addNewRegion(size_t rawSize, bool exact)
     size_t blockSz = region->blockSz;
 
     startUseBlock(region, fBlock);
-    bkndSync.pureSignal();
+    bkndSync.binsModified();
     return blockSz;
 }
 

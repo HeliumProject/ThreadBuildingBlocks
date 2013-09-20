@@ -1,5 +1,5 @@
 /*
-    Copyright 2005-2012 Intel Corporation.  All Rights Reserved.
+    Copyright 2005-2013 Intel Corporation.  All Rights Reserved.
 
     This file is part of Threading Building Blocks.
 
@@ -37,6 +37,8 @@
 
 int g_NumThreads = 0;
 Harness::tid_t  g_Master = 0;
+const char * g_Orig_Wakeup_Msg = "Missed wakeup or machine is overloaded?";
+const char * g_Wakeup_Msg = g_Orig_Wakeup_Msg;
 
 tbb::atomic<intptr_t> g_CurExecuted,
                       g_ExecutedAtLastCatch,
@@ -214,8 +216,8 @@ static void ThrowTestException ( intptr_t threshold ) {
 
 #define ASSERT_EXCEPTION() \
     { \
-        ASSERT (g_ExceptionsThrown ? g_ExceptionCaught : true, "throw without catch"); \
-        ASSERT (!g_ExceptionsThrown ? !g_ExceptionCaught : true, "catch without throw"); \
+        ASSERT (!g_ExceptionsThrown || g_ExceptionCaught, "throw without catch"); \
+        ASSERT (!g_ExceptionCaught || g_ExceptionsThrown, "catch without throw"); \
         ASSERT (g_ExceptionCaught || (g_ExceptionInMaster && !g_MasterExecutedThrow) || (!g_ExceptionInMaster && !g_NonMasterExecutedThrow), "no exception occurred"); \
         ASSERT (__TBB_EXCEPTION_TYPE_INFO_BROKEN || !g_UnknownException, "unknown exception was caught"); \
     }
@@ -252,7 +254,7 @@ retry:
 #if USE_TASK_SCHEDULER_OBSERVER
     ASSERT_WARNING( g_NumThreads == g_ActualMaxThreads, "Library did not provide sufficient threads");
 #endif
-    ASSERT_WARNING(n < c_Timeout,"Missed wakeup or machine is overloaded?");
+    ASSERT_WARNING(n < c_Timeout,g_Wakeup_Msg);
     // Workaround in case a missed wakeup takes place
     if ( n == c_Timeout ) {
         tbb::task &r = *new( tbb::task::allocate_root() ) tbb::empty_task();
